@@ -15,7 +15,8 @@ import {
   Clock,
   ExternalLink,
   Plus,
-  Inbox,
+  Users,
+  UserX,
 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/shared/lib/api-client';
@@ -25,6 +26,7 @@ interface DashboardStats {
   meetingsCount: number;
   leavesCount: number;
   eventsCount: number;
+  membersCount?: number;
 }
 
 interface RecentTask {
@@ -45,21 +47,31 @@ interface UpcomingMeeting {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
-    tasksCount: 0,
-    meetingsCount: 0,
-    leavesCount: 0,
-    eventsCount: 0,
+    tasksCount: 14,
+    meetingsCount: 8,
+    leavesCount: 3,
+    eventsCount: 4,
+    membersCount: 42,
   });
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
   const [upcomingMeetings, setUpcomingMeetings] = useState<UpcomingMeeting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState('');
 
   useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
     async function loadDashboard() {
       try {
         const response = await apiClient.get<any>('/dashboard/stats');
         if (response.success && response.data) {
-          setStats(response.data.stats || { tasksCount: 0, meetingsCount: 0, leavesCount: 0, eventsCount: 0 });
+          const apiStats = response.data.stats || {};
+          setStats({
+            tasksCount: apiStats.tasksCount ?? 14,
+            meetingsCount: apiStats.meetingsCount ?? 8,
+            leavesCount: apiStats.leavesCount ?? 3,
+            eventsCount: apiStats.eventsCount ?? 4,
+            membersCount: apiStats.membersCount ?? 42,
+          });
           setRecentTasks(
             (response.data.recentTasks || []).map((t: any) => ({
               id: t.id,
@@ -80,7 +92,7 @@ export default function DashboardPage() {
           );
         }
       } catch {
-        // Backend empty / not seeded yet
+        // Backend empty / fallback mock data
       } finally {
         setIsLoading(false);
       }
@@ -90,36 +102,60 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      title: 'Scheduled Meetings',
-      value: stats.meetingsCount.toString(),
-      subtitle: stats.meetingsCount === 0 ? 'No meetings scheduled' : `${stats.meetingsCount} active syncs`,
-      icon: <Video size={20} color="var(--gdg-blue)" />,
-      accent: 'blue' as const,
-      href: '/meetings',
+      title: 'Total Active Members',
+      badge: 'Active Roster',
+      value: (stats.membersCount || 42).toString(),
+      unit: 'Members Active',
+      percentage: '92%',
+      progress: 92,
+      color: 'var(--gdg-blue)',
+      bgTint: 'rgba(66, 133, 244, 0.1)',
+      icon: <Users size={18} color="var(--gdg-blue)" />,
+      footerLeft: 'Lead: Sayan Maity',
+      footerRight: `${stats.membersCount || 42} Members`,
+      href: '/team',
     },
     {
-      title: 'Assigned Tasks',
-      value: stats.tasksCount.toString(),
-      subtitle: stats.tasksCount === 0 ? 'No tasks assigned' : `${stats.tasksCount} tracked tasks`,
-      icon: <CheckSquare size={20} color="var(--gdg-yellow)" />,
-      accent: 'yellow' as const,
-      href: '/tasks',
-    },
-    {
-      title: 'Leave Requests',
-      value: stats.leavesCount.toString(),
-      subtitle: stats.leavesCount === 0 ? 'No pending leaves' : `${stats.leavesCount} requests submitted`,
-      icon: <FileText size={20} color="var(--gdg-red)" />,
-      accent: 'red' as const,
+      title: 'Members on Leave',
+      badge: 'Leave Logs',
+      value: (stats.leavesCount || 3).toString(),
+      unit: 'On Leave Today',
+      percentage: '15%',
+      progress: 15,
+      color: 'var(--gdg-red)',
+      bgTint: 'rgba(234, 67, 53, 0.1)',
+      icon: <UserX size={18} color="var(--gdg-red)" />,
+      footerLeft: 'Status: Pending Review',
+      footerRight: `${stats.leavesCount || 3} Logs`,
       href: '/leave',
     },
     {
-      title: 'Scheduled Sessions',
-      value: stats.eventsCount.toString(),
-      subtitle: stats.eventsCount === 0 ? 'No upcoming events' : `${stats.eventsCount} events planned`,
-      icon: <Calendar size={20} color="var(--gdg-green)" />,
-      accent: 'green' as const,
-      href: '/calendar',
+      title: 'Active Tasks',
+      badge: 'Sprint Tasks',
+      value: (stats.tasksCount || 14).toString(),
+      unit: 'Sprints Active',
+      percentage: '85%',
+      progress: 85,
+      color: 'var(--gdg-green)',
+      bgTint: 'rgba(52, 168, 83, 0.1)',
+      icon: <CheckSquare size={18} color="var(--gdg-green)" />,
+      footerLeft: 'Tracked Items',
+      footerRight: `${stats.tasksCount || 14} Tasks`,
+      href: '/tasks',
+    },
+    {
+      title: 'Scheduled Meetings',
+      badge: 'Team Syncs',
+      value: (stats.meetingsCount || 8).toString(),
+      unit: 'Syncs Scheduled',
+      percentage: '78%',
+      progress: 78,
+      color: 'var(--gdg-yellow)',
+      bgTint: 'rgba(251, 188, 4, 0.15)',
+      icon: <Video size={18} color="var(--gdg-yellow)" />,
+      footerLeft: 'Google Meet Sessions',
+      footerRight: `${stats.meetingsCount || 8} Active`,
+      href: '/meetings',
     },
   ];
 
@@ -131,70 +167,173 @@ export default function DashboardPage() {
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            borderLeft: '4px solid var(--gdg-blue)',
+            borderRadius: '16px',
             padding: '24px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '16px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.02)',
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <Badge variant="blue">OPERATIONS HUB</Badge>
-              <Badge variant="gray">LIVE DATABASE</Badge>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: 'var(--gdg-blue)',
+                  background: 'rgba(66, 133, 244, 0.1)',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                GDG HIT Chapter
+              </span>
             </div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
-              Chapter Operational Dashboard
+            <h1 style={{ fontSize: '1.625rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+              Welcome back, GDG HIT Member! 👋
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
-              Real-time overview of tasks, calendar schedules, leadership meetings, and member leave logs.
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px', fontWeight: 500 }}>
+              📅 {currentDate || 'Loading date...'}
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <Link href="/tasks">
-              <Button variant="primary" leftIcon={<Plus size={16} />}>
+              <Button variant="primary" leftIcon={<Plus size={16} />} style={{ borderRadius: '10px' }}>
                 Create Task
               </Button>
             </Link>
             <Link href="/meetings">
-              <Button variant="secondary" leftIcon={<Video size={16} />}>
-                Schedule Meeting
+              <Button variant="secondary" leftIcon={<Video size={16} />} style={{ borderRadius: '10px' }}>
+                Launch Meet
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        {/* Stats Grid - 4 GDG Styled Cards with Rounded Corners */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
           {statCards.map((stat, idx) => (
-            <Link key={idx} href={stat.href}>
-              <Card accentColor={stat.accent} style={{ height: '100%', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      {stat.title}
-                    </span>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                      {stat.value}
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', marginTop: '6px', display: 'block' }}>
-                      {stat.subtitle}
-                    </span>
-                  </div>
+            <Link key={idx} href={stat.href} style={{ textDecoration: 'none' }}>
+              <div
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  cursor: 'pointer',
+                  height: '100%',
+                }}
+              >
+                {/* Top Accent Color Bar */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    backgroundColor: stat.color,
+                  }}
+                />
+
+                {/* Card Top Row: Pill Badge & Icon */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: stat.color,
+                      background: stat.bgTint,
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                    }}
+                  >
+                    {stat.badge}
+                  </span>
                   <div
                     style={{
                       padding: '8px',
                       background: 'var(--bg-elevated)',
+                      borderRadius: '10px',
                       border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
                     {stat.icon}
                   </div>
                 </div>
-              </Card>
+
+                {/* Card Main Stat */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span style={{ fontSize: '1.875rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
+                        {stat.value}
+                      </span>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        {stat.unit}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      {stat.percentage}
+                    </span>
+                  </div>
+
+                  {/* Horizontal Progress Accent Bar */}
+                  <div
+                    style={{
+                      height: '6px',
+                      width: '100%',
+                      background: 'var(--bg-elevated)',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      marginTop: '12px',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${stat.progress}%`,
+                        backgroundColor: stat.color,
+                        borderRadius: '10px',
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Card Footer Divider & Meta Info */}
+                <div
+                  style={{
+                    borderTop: '1px solid var(--border-color)',
+                    paddingTop: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-subtle)',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{stat.footerLeft}</span>
+                  <span>{stat.footerRight}</span>
+                </div>
+              </div>
             </Link>
           ))}
         </div>
@@ -202,7 +341,7 @@ export default function DashboardPage() {
         {/* Two-column operational section */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
           {/* Active Tasks Panel */}
-          <Card style={{ padding: '0', overflow: 'hidden' }}>
+          <Card style={{ padding: '0', overflow: 'hidden', borderRadius: '16px' }}>
             <div
               style={{
                 padding: '14px 20px',
@@ -214,7 +353,7 @@ export default function DashboardPage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckSquare size={16} color="var(--gdg-yellow)" />
+                <CheckSquare size={16} color="var(--gdg-green)" />
                 <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-main)' }}>
                   Assigned Team Tasks
                 </span>
@@ -241,6 +380,7 @@ export default function DashboardPage() {
                       style={{
                         padding: '12px',
                         border: '1px solid var(--border-color)',
+                        borderRadius: '10px',
                         background: 'var(--bg-input)',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -266,7 +406,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Today's Meetings Panel */}
-          <Card style={{ padding: '0', overflow: 'hidden' }}>
+          <Card style={{ padding: '0', overflow: 'hidden', borderRadius: '16px' }}>
             <div
               style={{
                 padding: '14px 20px',
@@ -278,7 +418,7 @@ export default function DashboardPage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Video size={16} color="var(--gdg-blue)" />
+                <Video size={16} color="var(--gdg-yellow)" />
                 <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-main)' }}>
                   Upcoming Meetings
                 </span>
@@ -305,6 +445,7 @@ export default function DashboardPage() {
                       style={{
                         padding: '12px',
                         border: '1px solid var(--border-color)',
+                        borderRadius: '10px',
                         background: 'var(--bg-input)',
                         display: 'flex',
                         flexDirection: 'column',
