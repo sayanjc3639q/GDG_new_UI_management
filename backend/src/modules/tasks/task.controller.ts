@@ -17,14 +17,22 @@ export class TaskController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { title, assignee, domain, priority, dueDate, description } = req.body;
+      const { title, assignee, domain, priority, dueDate, description, assignedBy } = req.body;
       if (!title || !assignee || !dueDate) {
         throw new BadRequestError('Title, assignee, and dueDate are required');
+      }
+
+      // If assignedBy was provided use it; otherwise construct from authenticated user
+      let taskAssignedBy = assignedBy;
+      if (!taskAssignedBy && (req as any).user) {
+        const u = (req as any).user;
+        taskAssignedBy = `${u.name || 'Admin'} (${u.leadTitle || u.role || 'Lead'})`;
       }
 
       const task = await this.taskService.createTask({
         title,
         assignee,
+        assignedBy: taskAssignedBy || 'Lead Admin',
         domain: domain || 'General',
         priority: priority || 'MEDIUM',
         dueDate,

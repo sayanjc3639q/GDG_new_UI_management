@@ -232,20 +232,22 @@ input, textarea, select {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Custom Material Scrollbars */
+html {
+  scrollbar-gutter: stable;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbars across the entire app so it does not shift the UI layout */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  display: none;
+  width: 0px;
+  height: 0px;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--md-outline-variant);
-  border-radius: var(--radius-full);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--md-outline);
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Material Ripple & Interactive States */
@@ -343,6 +345,14 @@ input, textarea, select {
   width: 100%;
 }
 
+.mobile-only-logo {
+  display: none !important;
+}
+
+.mobile-dock-wrapper {
+  display: none !important;
+}
+
 .mobile-admin-btn {
   display: none !important;
 }
@@ -352,31 +362,616 @@ input, textarea, select {
     display: none !important;
   }
 
+  .mobile-only-logo {
+    display: flex !important;
+  }
+
   .mobile-admin-btn {
     display: inline-flex !important;
   }
 
-  .mobile-bottom-nav {
+  /* Floating Frosted Glass Mobile Dock */
+  .mobile-dock-wrapper {
     display: flex !important;
     position: fixed;
-    bottom: 0;
+    bottom: 16px;
     left: 0;
     right: 0;
-    height: 68px;
-    background: var(--bg-sidebar);
-    border-top: 1px solid var(--border-color);
+    justify-content: center;
+    align-items: center;
     z-index: 50;
+    pointer-events: none;
+    padding: 0 16px;
+  }
+
+  .mobile-dock-container {
+    display: flex;
     align-items: center;
     justify-content: space-around;
-    box-shadow: var(--shadow-md);
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(32, 33, 36, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 26px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+    max-width: 380px;
+    width: 100%;
+  }
+
+  [data-theme='light'] .mobile-dock-container {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .mobile-dock-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    position: relative;
+    padding: 2px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .mobile-dock-item:active {
+    transform: scale(0.92);
+  }
+
+  .mobile-dock-squircle {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+
+  .mobile-dock-active-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gdg-blue);
+    margin-top: 4px;
+    position: absolute;
+    bottom: -6px;
   }
 
   .main-content-container {
     padding: 16px;
-    padding-bottom: 88px !important;
+    padding-bottom: 100px !important;
   }
 
   .header-container {
     padding: 0 16px !important;
   }
 }
+
+/* =========================================================
+   Theme Cloud Transition Stage (Ultra-Realistic Day / Night)
+   ========================================================= */
+.theme-cloud-stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Atmospheric Sky Background Color Blend */
+.sky-atmosphere {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.transition-to-day .sky-atmosphere {
+  animation: skyToDay 1.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.transition-to-night .sky-atmosphere {
+  animation: skyToNight 1.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes skyToDay {
+  0% {
+    background: radial-gradient(circle at 50% 40%, rgba(26, 115, 232, 0.2) 0%, transparent 70%);
+    opacity: 0;
+  }
+  35% {
+    background: radial-gradient(circle at 50% 40%, #8ab4f8 0%, #d2e3fc 50%, #ffffff 100%);
+    opacity: 0.98;
+  }
+  75% {
+    background: radial-gradient(circle at 50% 40%, #e8f0fe 0%, #ffffff 80%);
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes skyToNight {
+  0% {
+    background: radial-gradient(circle at 50% 40%, rgba(251, 188, 4, 0.2) 0%, transparent 70%);
+    opacity: 0;
+  }
+  35% {
+    background: radial-gradient(circle at 50% 40%, #174ea6 0%, #0d1b2a 60%, #0b0c0e 100%);
+    opacity: 0.98;
+  }
+  75% {
+    background: radial-gradient(circle at 50% 40%, #1f2022 0%, #131314 80%);
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Celestial Centerpiece (Sun / Moon) */
+.celestial-hero {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Radiant Sun */
+.sun-hero {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: celestialRise 1.15s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.sun-glow-outer {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 188, 4, 0.5) 0%, rgba(234, 67, 53, 0.2) 45%, transparent 70%);
+  animation: pulseGlow 1.2s ease-in-out infinite alternate;
+}
+
+.sun-glow-mid {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fbbc04 0%, rgba(249, 171, 0, 0.8) 50%, transparent 75%);
+}
+
+.sun-core-sphere {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0%, #fbbc04 35%, #ea4335 100%);
+  box-shadow: 0 0 50px #fbbc04, 0 0 100px #ea4335;
+  z-index: 2;
+}
+
+.sun-beam-burst {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  animation: spinBeams 6s linear infinite;
+}
+
+.sun-beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 120px;
+  margin-left: -3px;
+  margin-top: -60px;
+  background: linear-gradient(to top, rgba(251, 188, 4, 0.8), transparent 85%);
+  border-radius: 3px;
+}
+.beam-1 { transform: rotate(0deg); }
+.beam-2 { transform: rotate(45deg); }
+.beam-3 { transform: rotate(90deg); }
+.beam-4 { transform: rotate(135deg); }
+.beam-5 { transform: rotate(180deg); }
+.beam-6 { transform: rotate(225deg); }
+.beam-7 { transform: rotate(270deg); }
+.beam-8 { transform: rotate(315deg); }
+
+@keyframes spinBeams {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseGlow {
+  from { transform: scale(0.9); opacity: 0.7; }
+  to { transform: scale(1.15); opacity: 1; }
+}
+
+/* Glowing Moon */
+.moon-hero {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: celestialRise 1.15s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.moon-glow-outer {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 199, 250, 0.45) 0%, rgba(66, 133, 244, 0.15) 50%, transparent 75%);
+  animation: pulseGlow 1.2s ease-in-out infinite alternate;
+}
+
+.moon-core-sphere {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e8eaed 40%, #80868b 100%);
+  box-shadow: 0 0 45px rgba(168, 199, 250, 0.7), 0 0 90px rgba(66, 133, 244, 0.4);
+  position: relative;
+  z-index: 2;
+}
+
+.moon-crater {
+  position: absolute;
+  background: rgba(128, 134, 139, 0.35);
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.4);
+}
+.crater-a { width: 16px; height: 16px; top: 22px; left: 24px; }
+.crater-b { width: 10px; height: 10px; bottom: 24px; right: 26px; }
+.crater-c { width: 8px; height: 8px; top: 48px; left: 44px; }
+
+.night-constellations {
+  position: absolute;
+  inset: -60px;
+  pointer-events: none;
+}
+.star-point {
+  position: absolute;
+  color: #a8c7fa;
+  animation: starTwinkle 0.9s ease-in-out infinite alternate;
+}
+.star-1 { top: 10px; left: 10px; font-size: 20px; }
+.star-2 { top: 25px; right: 15px; font-size: 16px; animation-delay: 0.2s; }
+.star-3 { bottom: 15px; left: 30px; font-size: 14px; animation-delay: 0.4s; }
+.star-4 { bottom: 35px; right: 20px; font-size: 18px; animation-delay: 0.1s; }
+.star-5 { top: 70px; right: -10px; font-size: 16px; animation-delay: 0.3s; }
+
+@keyframes celestialRise {
+  0% {
+    transform: translateY(80px) scale(0.5);
+    opacity: 0;
+  }
+  42% {
+    transform: translateY(0) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px) scale(0.85);
+    opacity: 0;
+  }
+}
+
+/* Google Colored Sparkles */
+.google-sparkle-stream {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+}
+.g-sparkle {
+  position: absolute;
+  font-size: 24px;
+  animation: sparkleFloat 1.1s ease-out forwards;
+}
+.g-blue { color: #4285f4; top: 30%; left: 35%; animation-delay: 0.05s; }
+.g-red { color: #ea4335; top: 35%; right: 35%; animation-delay: 0.12s; }
+.g-yellow { color: #fbbc04; bottom: 35%; left: 38%; animation-delay: 0.08s; }
+.g-green { color: #34a853; bottom: 30%; right: 38%; animation-delay: 0.15s; }
+
+@keyframes sparkleFloat {
+  0% { transform: scale(0) rotate(0deg); opacity: 0; }
+  50% { transform: scale(1.4) rotate(90deg); opacity: 1; }
+  100% { transform: scale(0) rotate(180deg); opacity: 0; }
+}
+
+/* SVG Organic Cloud Waves */
+.cloud-svg-layer {
+  position: absolute;
+  width: 100%;
+  height: 40vh;
+  z-index: 15;
+  pointer-events: none;
+}
+.cloud-wave-top {
+  top: 0;
+  transform-origin: top;
+  animation: waveSweepDown 1.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.cloud-wave-bottom {
+  bottom: 0;
+  transform-origin: bottom;
+  animation: waveSweepUp 1.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.transition-to-day .cloud-svg-wave {
+  color: #ffffff;
+  filter: drop-shadow(0 20px 30px rgba(66, 133, 244, 0.25));
+}
+.transition-to-night .cloud-svg-wave {
+  color: #1e1f20;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.6));
+}
+
+.cloud-svg-wave {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes waveSweepDown {
+  0% { transform: translateY(-100%) scaleY(0.6); opacity: 0; }
+  45% { transform: translateY(0%) scaleY(1.1); opacity: 0.98; }
+  100% { transform: translateY(-100%) scaleY(0.8); opacity: 0; }
+}
+
+@keyframes waveSweepUp {
+  0% { transform: translateY(100%) scaleY(0.6); opacity: 0; }
+  45% { transform: translateY(0%) scaleY(1.1); opacity: 0.98; }
+  100% { transform: translateY(100%) scaleY(0.8); opacity: 0; }
+}
+
+/* Volumetric Cloud Puffs */
+.cloud-volumetric-pack {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.transition-to-day .v-puff {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e8f0fe 65%, #c2e7ff 100%);
+  filter: drop-shadow(0 20px 40px rgba(26, 115, 232, 0.28));
+}
+
+.transition-to-night .v-puff {
+  background: radial-gradient(circle at 35% 35%, #303134 0%, #202124 65%, #17181a 100%);
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.7));
+}
+
+.v-puff {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.96;
+}
+
+/* Left Clouds */
+.pack-left .p1 {
+  width: 75vw;
+  height: 75vw;
+  max-width: 680px;
+  max-height: 680px;
+  top: -10%;
+  left: -25%;
+  animation: sweepFromLeft 1.15s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.pack-left .p2 {
+  width: 60vw;
+  height: 60vw;
+  max-width: 520px;
+  max-height: 520px;
+  bottom: 0%;
+  left: -15%;
+  animation: sweepFromLeft 1.15s 0.04s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.pack-left .p3 {
+  width: 45vw;
+  height: 45vw;
+  max-width: 400px;
+  max-height: 400px;
+  top: 35%;
+  left: 10%;
+  animation: puffExplode 1.15s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.pack-left .p4 {
+  width: 40vw;
+  height: 40vw;
+  max-width: 360px;
+  max-height: 360px;
+  bottom: -10%;
+  left: 20%;
+  animation: sweepFromLeft 1.15s 0.06s forwards;
+}
+
+/* Right Clouds */
+.pack-right .p5 {
+  width: 80vw;
+  height: 80vw;
+  max-width: 720px;
+  max-height: 720px;
+  bottom: -15%;
+  right: -25%;
+  animation: sweepFromRight 1.15s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.pack-right .p6 {
+  width: 65vw;
+  height: 65vw;
+  max-width: 560px;
+  max-height: 560px;
+  top: -5%;
+  right: -15%;
+  animation: sweepFromRight 1.15s 0.04s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.pack-right .p7 {
+  width: 45vw;
+  height: 45vw;
+  max-width: 420px;
+  max-height: 420px;
+  top: 30%;
+  right: 15%;
+  animation: puffExplode 1.15s 0.03s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.pack-right .p8 {
+  width: 38vw;
+  height: 38vw;
+  max-width: 340px;
+  max-height: 340px;
+  top: 60%;
+  right: 25%;
+  animation: sweepFromRight 1.15s 0.08s forwards;
+}
+
+/* Center Billows */
+.pack-center .p9 {
+  width: 55vw;
+  height: 55vw;
+  max-width: 500px;
+  max-height: 500px;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: puffCenter 1.15s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.pack-center .p10 {
+  width: 70vw;
+  height: 70vw;
+  max-width: 620px;
+  max-height: 620px;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: puffCenter 1.15s 0.05s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.pack-center .p11 {
+  width: 45vw;
+  height: 45vw;
+  max-width: 400px;
+  max-height: 400px;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: puffExplode 1.15s 0.06s forwards;
+}
+
+@keyframes sweepFromLeft {
+  0% { transform: translateX(-110%) scale(0.6); opacity: 0; }
+  45% { transform: translateX(0%) scale(1.12); opacity: 1; }
+  100% { transform: translateX(110%) scale(0.8); opacity: 0; }
+}
+
+@keyframes sweepFromRight {
+  0% { transform: translateX(110%) scale(0.6); opacity: 0; }
+  45% { transform: translateX(0%) scale(1.12); opacity: 1; }
+  100% { transform: translateX(-110%) scale(0.8); opacity: 0; }
+}
+
+@keyframes puffCenter {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  45% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.98; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+@keyframes puffExplode {
+  0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  45% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1.8) rotate(30deg); opacity: 0; }
+}
+
+/* ==========================================================================
+   Slide to Log In Mobile Component Styling
+   ========================================================================== */
+@keyframes textShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.slide-to-login-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(128, 134, 139, 0.45) 0%,
+    rgba(66, 133, 244, 0.95) 50%,
+    rgba(128, 134, 139, 0.45) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 2.5s infinite linear;
+}
+
+[data-theme="dark"] .slide-to-login-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(147, 184, 248, 1) 50%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 2.5s infinite linear;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(26, 115, 232, 0);
+  }
+}
+
+.slide-thumb-glow {
+  animation: pulseGlow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0.4) rotate(-30deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.slide-check-pop {
+  animation: checkPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+

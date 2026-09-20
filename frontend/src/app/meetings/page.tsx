@@ -9,6 +9,7 @@ import { Modal } from '@/shared/components/ui/modal';
 import { EmptyState } from '@/shared/components/ui/empty-state';
 import { Icon } from '@/shared/components/ui/icon';
 import { useMeetings } from '@/shared/hooks/useMeetings';
+import { useAuth } from '@/shared/context/auth-context';
 import { MeetingsService, Meeting } from '@/modules/meetings/meetings.service';
 
 interface CustomMeeting extends Meeting {
@@ -17,6 +18,10 @@ interface CustomMeeting extends Meeting {
 }
 
 export default function MeetingsPage() {
+  const { user } = useAuth();
+  const canManageMeetings = Boolean(
+    user && (user.role === 'DEVELOPER' || user.role === 'LEAD' || user.role === 'DOMAIN_SENIOR')
+  );
   const { meetings: storeMeetings, createMeeting: createMeetingAction } = useMeetings();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
@@ -207,14 +212,16 @@ export default function MeetingsPage() {
               </div>
             )}
 
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Icon name="video_call" size={16} />}
-              onClick={() => setIsScheduleOpen(true)}
-            >
-              Create Meeting
-            </Button>
+            {canManageMeetings && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Icon name="video_call" size={16} />}
+                onClick={() => setIsScheduleOpen(true)}
+              >
+                Create Meeting
+              </Button>
+            )}
           </div>
         </div>
 
@@ -232,9 +239,13 @@ export default function MeetingsPage() {
             {filteredMeetings.length === 0 ? (
               <EmptyState
                 title="No Meetings Found"
-                description="There are no scheduled meetings matching your selected date or filter."
-                actionLabel="Create Meeting"
-                onAction={() => setIsScheduleOpen(true)}
+                description={
+                  canManageMeetings
+                    ? 'There are no scheduled meetings matching your selected date or filter.'
+                    : 'There are currently no scheduled meetings.'
+                }
+                actionLabel={canManageMeetings ? 'Create Meeting' : undefined}
+                onAction={canManageMeetings ? () => setIsScheduleOpen(true) : undefined}
                 icon="videocam"
               />
             ) : (

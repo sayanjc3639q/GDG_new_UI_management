@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardShell } from '@/shared/layout/dashboard-shell';
 import { useAuth } from '@/shared/context/auth-context';
 import { Icon } from '@/shared/components/ui/icon';
+import { normalizeGithubUrl, normalizeLinkedinUrl } from '@/shared/lib/url-normalizer';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function ProfilePage() {
   const [bio, setBio] = useState(user?.bio || '');
   const [github, setGithub] = useState(user?.github || '');
   const [linkedin, setLinkedin] = useState(user?.linkedin || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [dob, setDob] = useState(user?.dob || '');
   const [domain, setDomain] = useState(user?.domain || '');
   const [profileMsg, setProfileMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -35,6 +38,8 @@ export default function ProfilePage() {
       setBio(user.bio || '');
       setGithub(user.github || '');
       setLinkedin(user.linkedin || '');
+      setPhone(user.phone || '');
+      setDob(user.dob || '');
       setDomain(user.domain || '');
     }
   }, [user]);
@@ -166,14 +171,39 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileMsg(null);
+
+    // Validate and normalize GitHub
+    let normalizedGithub = '';
+    if (github && github.trim()) {
+      const res = normalizeGithubUrl(github);
+      if (res.error) {
+        setProfileMsg({ type: 'error', text: res.error });
+        return;
+      }
+      normalizedGithub = res.url;
+    }
+
+    // Validate and normalize LinkedIn
+    let normalizedLinkedin = '';
+    if (linkedin && linkedin.trim()) {
+      const res = normalizeLinkedinUrl(linkedin);
+      if (res.error) {
+        setProfileMsg({ type: 'error', text: res.error });
+        return;
+      }
+      normalizedLinkedin = res.url;
+    }
+
     setProfileLoading(true);
 
     try {
       const res = await updateProfile({
         name,
         bio,
-        github,
-        linkedin,
+        github: normalizedGithub || undefined,
+        linkedin: normalizedLinkedin || undefined,
+        phone,
+        dob,
         domain: domain as any,
       });
 
@@ -294,6 +324,36 @@ export default function ProfilePage() {
                 >
                   <Icon name="work" size={16} color="var(--gdg-blue)" />
                   <span>{user.domain}</span>
+                </div>
+              )}
+
+              {user.phone && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.8125rem',
+                    color: 'var(--text-subtle)',
+                  }}
+                >
+                  <Icon name="call" size={16} color="var(--gdg-green)" />
+                  <span>{user.phone}</span>
+                </div>
+              )}
+
+              {user.dob && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.8125rem',
+                    color: 'var(--text-subtle)',
+                  }}
+                >
+                  <Icon name="cake" size={16} color="var(--gdg-yellow)" />
+                  <span>{user.dob}</span>
                 </div>
               )}
 
@@ -820,6 +880,73 @@ export default function ProfilePage() {
                     fontFamily: 'inherit',
                   }}
                 />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label
+                    htmlFor="phone"
+                    style={{
+                      display: 'block',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: 'var(--text-main)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Phone Number
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    placeholder="+91 9876543210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="dob"
+                    style={{
+                      display: 'block',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: 'var(--text-main)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Date of Birth
+                  </label>
+                  <input
+                    id="dob"
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
               </div>
 
               <div>

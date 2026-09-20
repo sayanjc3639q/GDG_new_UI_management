@@ -16,9 +16,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ children }) => {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
         <Navbar />
-        <main className="main-content-container" style={{ flex: 1, overflowY: 'auto' }}>
+        <main className="main-content-container" style={{ flex: 1 }}>
           {children}
         </main>
       </div>

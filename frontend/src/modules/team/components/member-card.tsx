@@ -11,6 +11,12 @@ interface MemberCardProps {
 export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
   const getRoleBadge = (role: TeamMember['role'], leadTitle?: TeamMember['leadTitle']) => {
     switch (role) {
+      case 'DEVELOPER':
+        return (
+          <Badge variant="purple" style={{ background: 'linear-gradient(135deg, #a142f4 0%, #681da8 100%)', color: '#fff', border: 'none' }}>
+            Developer
+          </Badge>
+        );
       case 'LEAD':
         return (
           <Badge variant="yellow">
@@ -57,7 +63,9 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
           height: '68px',
           borderRadius: 'var(--radius-full)',
           background:
-            member.role === 'LEAD'
+            member.role === 'DEVELOPER'
+              ? 'linear-gradient(135deg, #a142f4 0%, #681da8 100%)'
+              : member.role === 'LEAD'
               ? 'linear-gradient(135deg, var(--gdg-yellow) 0%, #ea8600 100%)'
               : member.role === 'DOMAIN_SENIOR'
               ? 'linear-gradient(135deg, var(--gdg-blue) 0%, #174ea6 100%)'
@@ -101,14 +109,17 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '8px',
           marginTop: '4px',
           color: 'var(--text-muted)',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
         }}
       >
+        {/* Email */}
         <a
           href={`mailto:${member.email}`}
-          title="Send Email"
+          title={member.email ? `Email: ${member.email}` : 'No Email provided'}
           style={{
             width: '36px',
             height: '36px',
@@ -120,58 +131,184 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
             justifyContent: 'center',
             border: '1px solid var(--border-color)',
             textDecoration: 'none',
-            transition: 'background 0.2s, color 0.2s',
+            transition: 'background 0.2s, color 0.2s, transform 0.1s',
           }}
+          className="m3-interactive"
         >
-          <Icon name="mail" size={16} />
+          <Icon name="mail" size={18} />
         </a>
 
-        {member.github && (
+        {/* Phone */}
+        {member.phone ? (
           <a
-            href={member.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="GitHub Profile"
+            href={`tel:${member.phone}`}
+            title={`Call: ${member.phone}`}
             style={{
               width: '36px',
               height: '36px',
               borderRadius: 'var(--radius-full)',
               background: 'var(--bg-elevated)',
-              color: 'var(--text-muted)',
+              color: 'var(--gdg-green)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               border: '1px solid var(--border-color)',
               textDecoration: 'none',
-              transition: 'background 0.2s, color 0.2s',
+              transition: 'background 0.2s, color 0.2s, transform 0.1s',
+            }}
+            className="m3-interactive"
+          >
+            <Icon name="call" size={18} color="var(--gdg-green)" />
+          </a>
+        ) : (
+          <div
+            title="Phone number not provided"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-subtle)',
+              opacity: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              cursor: 'not-allowed',
             }}
           >
-            <Icon name="code" size={16} />
-          </a>
+            <Icon name="call" size={18} />
+          </div>
         )}
 
-        {member.linkedin && (
+        {/* GitHub */}
+        {member.github ? (
           <a
-            href={member.linkedin}
+            href={member.github.startsWith('http') ? member.github : `https://${member.github}`}
             target="_blank"
             rel="noopener noreferrer"
-            title="LinkedIn Profile"
+            title={`GitHub: ${member.github}`}
             style={{
               width: '36px',
               height: '36px',
               borderRadius: 'var(--radius-full)',
               background: 'var(--bg-elevated)',
-              color: 'var(--text-muted)',
+              color: 'var(--text-main)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               border: '1px solid var(--border-color)',
               textDecoration: 'none',
-              transition: 'background 0.2s, color 0.2s',
+              transition: 'background 0.2s, color 0.2s, transform 0.1s',
+            }}
+            className="m3-interactive"
+          >
+            <Icon name="code" size={18} />
+          </a>
+        ) : (
+          <div
+            title="GitHub profile not provided"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-subtle)',
+              opacity: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              cursor: 'not-allowed',
             }}
           >
-            <Icon name="public" size={16} />
+            <Icon name="code" size={18} />
+          </div>
+        )}
+
+        {/* LinkedIn */}
+        {member.linkedin ? (
+          <a
+            href={member.linkedin.startsWith('http') ? member.linkedin : `https://${member.linkedin}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`LinkedIn: ${member.linkedin}`}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--gdg-blue)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              textDecoration: 'none',
+              transition: 'background 0.2s, color 0.2s, transform 0.1s',
+            }}
+            className="m3-interactive"
+          >
+            <Icon name="public" size={18} color="var(--gdg-blue)" />
           </a>
+        ) : (
+          <div
+            title="LinkedIn profile not provided"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-subtle)',
+              opacity: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              cursor: 'not-allowed',
+            }}
+          >
+            <Icon name="public" size={18} />
+          </div>
+        )}
+
+        {/* Date of Birth (DOB) */}
+        {member.dob ? (
+          <div
+            title={`Date of Birth: ${member.dob}`}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--gdg-yellow)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              cursor: 'default',
+            }}
+          >
+            <Icon name="cake" size={18} color="var(--gdg-yellow)" />
+          </div>
+        ) : (
+          <div
+            title="Date of Birth not set"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-subtle)',
+              opacity: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              cursor: 'not-allowed',
+            }}
+          >
+            <Icon name="cake" size={18} />
+          </div>
         )}
       </div>
     </Card>

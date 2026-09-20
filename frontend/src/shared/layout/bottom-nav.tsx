@@ -3,63 +3,79 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { navItems } from './sidebar';
 import { Icon } from '@/shared/components/ui/icon';
+
+// Primary dock navigation items with rich squircle icon tile aesthetics (matching Google/iOS dock)
+const dockItems = [
+  {
+    label: 'Dashboard',
+    href: '/',
+    iconName: 'dashboard',
+    gradient: 'linear-gradient(135deg, #1a73e8, #0d47a1)', // Google Blue
+    shadow: '0 6px 16px rgba(26, 115, 232, 0.35)',
+  },
+  {
+    label: 'Calendar',
+    href: '/calendar',
+    iconName: 'calendar_month',
+    gradient: 'linear-gradient(135deg, #f29900, #e37400)', // Google Amber/Orange
+    shadow: '0 6px 16px rgba(242, 153, 0, 0.35)',
+  },
+  {
+    label: 'Tasks',
+    href: '/tasks',
+    iconName: 'task_alt',
+    gradient: 'linear-gradient(135deg, #a142f4, #681da8)', // Purple / Deliverables
+    shadow: '0 6px 16px rgba(161, 66, 244, 0.35)',
+  },
+  {
+    label: 'Meetings',
+    href: '/meetings',
+    iconName: 'videocam',
+    gradient: 'linear-gradient(135deg, #34a853, #188038)', // Google Green
+    shadow: '0 6px 16px rgba(52, 168, 83, 0.35)',
+  },
+  {
+    label: 'All Apps',
+    href: '/all',
+    iconName: 'grid_view',
+    gradient: 'linear-gradient(135deg, #ea4335, #c5221f)', // Google Red
+    shadow: '0 6px 16px rgba(234, 67, 53, 0.35)',
+  },
+];
 
 export const BottomNav: React.FC = () => {
   const pathname = usePathname();
 
-  // Mobile bottom bar displays primary management items (excluding ADMIN which is in top bar)
-  const mobileNavItems = navItems.filter((item) => item.label !== 'ADMIN');
-
   return (
-    <nav className="mobile-bottom-nav">
-      {mobileNavItems.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 1,
-              height: '100%',
-              gap: '4px',
-              fontSize: '0.6875rem',
-              fontWeight: isActive ? 600 : 500,
-              color: isActive ? 'var(--md-primary)' : 'var(--text-muted)',
-              transition: 'all 0.15s ease',
-              padding: '6px 0',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '4px 16px',
-                borderRadius: 'var(--radius-full)',
-                background: isActive ? 'var(--md-primary-container)' : 'transparent',
-                color: isActive ? 'var(--md-on-primary-container)' : 'inherit',
-                transition: 'background-color 0.2s ease',
-              }}
+    <div className="mobile-dock-wrapper">
+      <nav className="mobile-dock-container">
+        {dockItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`mobile-dock-item ${isActive ? 'is-active' : ''}`}
+              aria-label={item.label}
+              title={item.label}
             >
-              <Icon
-                name={item.iconName}
-                size={20}
-                fill={isActive}
-                color={isActive ? 'var(--md-on-primary-container)' : 'var(--text-subtle)'}
-              />
-            </div>
-            <span style={{ fontSize: '0.6875rem', whiteSpace: 'nowrap' }}>
-              {item.label.split(' ')[0]}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+              <div
+                className="mobile-dock-squircle"
+                style={{
+                  background: item.gradient,
+                  boxShadow: isActive ? item.shadow : '0 3px 8px rgba(0, 0, 0, 0.15)',
+                  transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                }}
+              >
+                <Icon name={item.iconName} size={22} color="#ffffff" fill={isActive} />
+              </div>
+              {isActive && <div className="mobile-dock-active-dot" />}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 };
+

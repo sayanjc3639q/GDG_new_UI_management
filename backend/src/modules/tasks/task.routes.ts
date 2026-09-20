@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
+import { authenticate, requireRoles } from '../../common/middlewares/auth.middleware';
 
 export function createTasksRouter(): Router {
   const router = Router();
@@ -8,9 +9,9 @@ export function createTasksRouter(): Router {
   const controller = new TaskController(service);
 
   router.get('/', controller.getAll);
-  router.post('/', controller.create);
+  router.post('/', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.create);
   router.patch('/:id', controller.update);
-  router.delete('/:id', controller.delete);
+  router.delete('/:id', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.delete);
 
   return router;
 }

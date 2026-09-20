@@ -64,10 +64,11 @@ export const requireRoles = (...allowedRoles: UserRole[]) => {
       return next(new UnauthorizedError('User is not authenticated'));
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return next(new ForbiddenError('You do not have permission to access this resource'));
+    // DEVELOPER has superadmin bypass: can access all endpoints
+    if (req.user.role === 'DEVELOPER' || allowedRoles.includes(req.user.role)) {
+      return next();
     }
 
-    next();
+    return next(new ForbiddenError('You do not have permission to access this resource'));
   };
 };

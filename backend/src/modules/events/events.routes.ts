@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
+import { authenticate, requireRoles } from '../../common/middlewares/auth.middleware';
 
 export function createEventsRouter(): Router {
   const router = Router();
@@ -9,9 +10,9 @@ export function createEventsRouter(): Router {
 
   router.get('/', controller.getAll);
   router.get('/:id', controller.getById);
-  router.post('/', controller.create);
-  router.patch('/:id', controller.update);
-  router.delete('/:id', controller.delete);
+  router.post('/', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.create);
+  router.patch('/:id', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.update);
+  router.delete('/:id', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.delete);
 
   return router;
 }

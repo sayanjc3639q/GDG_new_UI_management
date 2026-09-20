@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { DashboardShell } from '@/shared/layout/dashboard-shell';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
@@ -10,54 +10,47 @@ import { Modal } from '@/shared/components/ui/modal';
 import { EmptyState } from '@/shared/components/ui/empty-state';
 import { Icon } from '@/shared/components/ui/icon';
 import { useLeaves } from '@/shared/hooks/useLeaves';
+import { useAuth } from '@/shared/context/auth-context';
 import { LeaveType, LeaveStatus } from '@/modules/leaves/leaves.service';
 
 export default function LeaveApplicationPage() {
+  const { user } = useAuth();
   const {
     filteredLeaves: applications,
-    isLoading,
     createLeave,
-    updateLeaveStatus,
   } = useLeaves();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
-  const [applicantName, setApplicantName] = useState('Chapter Lead');
-  const [applicantRole, setApplicantRole] = useState('Lead');
   const [leaveType, setLeaveType] = useState<LeaveType>('EXAM_PREPARATION');
   const [startDate, setStartDate] = useState('2026-09-23');
   const [endDate, setEndDate] = useState('2026-09-25');
   const [reason, setReason] = useState('');
-  const [handoverPerson, setHandoverPerson] = useState('Co-Lead');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason) return;
+    if (!reason.trim()) return;
 
+    setIsSubmitting(true);
     try {
       await createLeave({
-        applicantName,
-        applicantRole,
+        applicantName: user?.name || 'Member',
+        applicantRole: user?.leadTitle || user?.role || 'Member',
         leaveType,
         startDate,
         endDate,
         reason,
-        handoverPerson,
       });
 
       setReason('');
       setIsModalOpen(false);
     } catch (err) {
       console.error('Failed to submit leave application:', err);
-    }
-  };
-
-  const handleStatusChange = async (id: string, newStatus: LeaveStatus) => {
-    try {
-      await updateLeaveStatus(id, newStatus);
-    } catch (err) {
-      console.error('Failed to update leave status:', err);
+      alert('Failed to submit leave request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -75,16 +68,31 @@ export default function LeaveApplicationPage() {
 
   return (
     <DashboardShell>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '960px', margin: '0 auto' }}>
         {/* Top Action Bar */}
         <div
           style={{
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             alignItems: 'center',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '16px 24px',
+            boxShadow: 'var(--shadow-sm)',
+            flexWrap: 'wrap',
             gap: '12px',
           }}
         >
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
+              Leave Applications
+            </h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+              Submit and track your academic, medical, or personal leave requests.
+            </p>
+          </div>
+
           <Button
             variant="primary"
             leftIcon={<Icon name="add" size={18} />}
@@ -93,7 +101,6 @@ export default function LeaveApplicationPage() {
             Apply for Leave
           </Button>
         </div>
-
 
         {/* Applications List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -110,10 +117,10 @@ export default function LeaveApplicationPage() {
               <Card
                 key={app.id}
                 style={{
-                  padding: '24px',
+                  padding: '22px 24px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '14px',
+                  gap: '12px',
                   borderRadius: 'var(--radius-xl)',
                 }}
                 className="m3-interactive"
@@ -129,7 +136,7 @@ export default function LeaveApplicationPage() {
                 >
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
                         {app.applicantName}
                       </span>
                       <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>({app.applicantRole})</span>
@@ -141,7 +148,6 @@ export default function LeaveApplicationPage() {
                     </p>
                   </div>
 
-                  {/* Applicant Status Pill */}
                   <div>
                     {getStatusBadge(app.status)}
                   </div>
@@ -152,11 +158,12 @@ export default function LeaveApplicationPage() {
                   style={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: '18px',
-                    paddingTop: '14px',
+                    gap: '16px',
+                    paddingTop: '12px',
                     borderTop: '1px solid var(--border-color)',
                     fontSize: '0.8125rem',
                     color: 'var(--text-muted)',
+                    alignItems: 'center',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -168,19 +175,21 @@ export default function LeaveApplicationPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Badge variant="purple">{app.leaveType.replace('_', ' ')}</Badge>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Icon name="person" size={16} color="var(--text-subtle)" />
-                    <span>
-                      Handover to: <strong style={{ color: 'var(--text-main)' }}>{app.handoverPerson}</strong>
-                    </span>
-                  </div>
+                  {app.handoverPerson && app.handoverPerson !== 'None' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Icon name="person" size={16} color="var(--text-subtle)" />
+                      <span>
+                        Handover: <strong style={{ color: 'var(--text-main)' }}>{app.handoverPerson}</strong>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </Card>
             ))
           )}
         </div>
 
-        {/* Modal */}
+        {/* Modal: Cleaned Up without redundant Name, Role, or Handover Person */}
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -188,21 +197,6 @@ export default function LeaveApplicationPage() {
           icon="event_busy"
         >
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <Input
-                label="Your Name"
-                value={applicantName}
-                onChange={(e) => setApplicantName(e.target.value)}
-                required
-              />
-              <Input
-                label="Role"
-                value={applicantRole}
-                onChange={(e) => setApplicantRole(e.target.value)}
-                required
-              />
-            </div>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
                 Reason Category
@@ -272,20 +266,12 @@ export default function LeaveApplicationPage() {
               />
             </div>
 
-            <Input
-              label="Temporary Task Handover Person"
-              placeholder="e.g. Co-Lead"
-              value={handoverPerson}
-              onChange={(e) => setHandoverPerson(e.target.value)}
-              required
-            />
-
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
               <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary">
-                Submit Request
+              <Button type="submit" variant="primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit Request'}
               </Button>
             </div>
           </form>

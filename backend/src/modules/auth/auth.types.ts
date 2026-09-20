@@ -9,6 +9,10 @@ export interface AuthUser {
   leadTitle?: LeadTitle;
   avatarUrl?: string;
   bio?: string;
+  github?: string;
+  linkedin?: string;
+  phone?: string;
+  dob?: string;
   authProvider?: AuthProvider;
   hasPassword: boolean;
   googleId?: string;
@@ -61,9 +65,13 @@ export interface ClientInfo {
 }
 
 export function isMemberAccessAllowed(role: UserRole): boolean {
-  return role === 'MEMBER' || role === 'DOMAIN_SENIOR' || role === 'LEAD';
+  return role === 'DEVELOPER' || role === 'LEAD' || role === 'DOMAIN_SENIOR' || role === 'MEMBER';
 }
 
 export function isLeadAdminAccessAllowed(role: UserRole): boolean {
-  return role === 'LEAD';
+  return role === 'DEVELOPER' || role === 'LEAD' || role === 'DOMAIN_SENIOR';
+}
+
+export function isDeveloperRole(role: UserRole): boolean {
+  return role === 'DEVELOPER';
 }

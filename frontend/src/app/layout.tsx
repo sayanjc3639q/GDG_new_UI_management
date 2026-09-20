@@ -3,6 +3,7 @@ import './globals.css';
 import { ThemeProvider } from '@/shared/context/theme-context';
 import { AuthProvider } from '@/shared/context/auth-context';
 import { ReduxProvider } from '@/store/provider';
+import { ThemeCloudTransition } from '@/shared/components/ui/theme-cloud-transition';
 
 export const metadata: Metadata = {
   title: 'GDG Management Platform',
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <ReduxProvider>
           <ThemeProvider>
+            <ThemeCloudTransition />
             <AuthProvider>{children}</AuthProvider>
           </ThemeProvider>
         </ReduxProvider>

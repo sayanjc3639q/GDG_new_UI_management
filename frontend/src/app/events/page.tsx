@@ -6,9 +6,15 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Icon } from '@/shared/components/ui/icon';
 import { useEvents } from '@/shared/hooks/useEvents';
+import { useAuth } from '@/shared/context/auth-context';
 import { EventCard, CreateEventModal, CreateEventDto } from '@/modules/events';
 
 export default function EventsPage() {
+  const { user } = useAuth();
+  const canManageEvents = Boolean(
+    user && (user.role === 'DEVELOPER' || user.role === 'LEAD' || user.role === 'DOMAIN_SENIOR')
+  );
+
   const {
     filteredEvents,
     filter: selectedType,
@@ -88,14 +94,16 @@ export default function EventsPage() {
               />
             </div>
 
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Icon name="add" size={16} />}
-              onClick={() => setIsModalOpen(true)}
-            >
-              Create Event
-            </Button>
+            {canManageEvents && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Icon name="add" size={16} />}
+                onClick={() => setIsModalOpen(true)}
+              >
+                Create Event
+              </Button>
+            )}
           </div>
         </div>
 

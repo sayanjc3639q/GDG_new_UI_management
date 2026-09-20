@@ -1,4 +1,4 @@
-export type MemberRole = 'MEMBER' | 'DOMAIN_SENIOR' | 'LEAD';
+export type MemberRole = 'DEVELOPER' | 'LEAD' | 'DOMAIN_SENIOR' | 'MEMBER';
 
 export type MemberDomain =
   | 'Graphic Designer'
@@ -13,6 +13,7 @@ export type MemberDomain =
 export type LeadTitle =
   | 'Organizer'
   | 'Co-Organizer'
+  | 'Lead Developer'
   | 'Secretary'
   | 'Treasurer'
   | 'Domain Lead';
@@ -28,6 +29,8 @@ export interface TeamMember {
   avatarUrl?: string;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
   joinedAt: string;
 }
 
@@ -40,6 +43,8 @@ export interface CreateMemberDto {
   leadTitle?: LeadTitle;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
 }
 
 export interface UpdateMemberDto {
@@ -51,4 +56,6 @@ export interface UpdateMemberDto {
   leadTitle?: LeadTitle;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
 }

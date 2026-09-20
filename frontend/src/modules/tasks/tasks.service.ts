@@ -1,14 +1,27 @@
 import { apiClient } from '@/shared/lib/api-client';
 
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'SUBMITTED' | 'REJECTED' | 'ACCEPTED' | 'COMPLETED';
+
 export interface Task {
   id: string;
   title: string;
   description: string;
   assignee: string;
+  assignedBy?: string;
   domain: string;
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
+  status: TaskStatus;
   dueDate: string;
+  submissionLink?: string;
+  submissionNotes?: string;
+  submittedAt?: string;
+  reviewComment?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  acceptedBy?: string;
+  acceptedAt?: string;
+  markedDoneBy?: string;
+  markedDoneAt?: string;
   createdAt?: string;
 }
 
@@ -16,6 +29,7 @@ export interface CreateTaskDto {
   title: string;
   description?: string;
   assignee: string;
+  assignedBy?: string;
   domain: string;
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   dueDate: string;
@@ -48,5 +62,12 @@ export class TasksService {
       return response.data;
     }
     throw new Error(response.message || 'Failed to update task');
+  }
+
+  static async deleteTask(id: string): Promise<void> {
+    const response = await apiClient.delete(`/tasks/${id}`);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to delete task');
+    }
   }
 }

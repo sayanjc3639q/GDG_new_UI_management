@@ -1,12 +1,345 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/shared/context/auth-context';
 import { config } from '@/config/env';
 import { Icon } from '@/shared/components/ui/icon';
 import { useTheme } from '@/shared/context/theme-context';
+
+const GoogleGLogo = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" style={{ display: 'block' }}>
+    <path
+      fill="#4285F4"
+      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+    />
+  </svg>
+);
+
+/**
+ * Interactive "Slide to Log In" Component with Yellow (Authenticating) & Green (Checked) Transitions
+ */
+function SlideToLogin({
+  onSlideComplete,
+  isLoading,
+  isSuccess,
+  disabled,
+  variant = 'default',
+  text = 'Slide to Sign In',
+}: {
+  onSlideComplete: () => void;
+  isLoading: boolean;
+  isSuccess?: boolean;
+  disabled?: boolean;
+  variant?: 'default' | 'google';
+  text?: string;
+}) {
+  const [sliderPos, setSliderPos] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSlidToEnd, setIsSlidToEnd] = useState(false);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef(0);
+
+  const getTrackBounds = useCallback(() => {
+    if (!trackRef.current) return { maxDrag: 220, trackWidth: 280 };
+    const trackWidth = trackRef.current.offsetWidth;
+    const thumbWidth = 46;
+    const maxDrag = Math.max(0, trackWidth - thumbWidth - 8);
+    return { maxDrag, trackWidth };
+  }, []);
+
+  // Reset slider if error occurs or loading finishes without success
+  useEffect(() => {
+    if (!isLoading && !isSuccess && isSlidToEnd) {
+      const timer = setTimeout(() => {
+        setIsSlidToEnd(false);
+        setSliderPos(0);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isSuccess, isSlidToEnd]);
+
+  const triggerComplete = useCallback(() => {
+    setIsSlidToEnd(true);
+    if (typeof window !== 'undefined' && window.navigator && 'vibrate' in window.navigator) {
+      try {
+        window.navigator.vibrate(25);
+      } catch {}
+    }
+    onSlideComplete();
+  }, [onSlideComplete]);
+
+  // Touch Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (disabled || isLoading || isSuccess || isSlidToEnd) return;
+    setIsDragging(true);
+    startXRef.current = e.touches[0].clientX - sliderPos;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || disabled || isLoading || isSuccess || isSlidToEnd) return;
+    const { maxDrag } = getTrackBounds();
+    const currentX = e.touches[0].clientX;
+    const newPos = Math.max(0, Math.min(maxDrag, currentX - startXRef.current));
+    setSliderPos(newPos);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging || disabled || isLoading || isSuccess || isSlidToEnd) return;
+    setIsDragging(false);
+    const { maxDrag } = getTrackBounds();
+
+    if (sliderPos >= maxDrag * 0.75) {
+      setSliderPos(maxDrag);
+      triggerComplete();
+    } else {
+      setSliderPos(0);
+    }
+  };
+
+  // Mouse Handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (disabled || isLoading || isSuccess || isSlidToEnd) return;
+    setIsDragging(true);
+    startXRef.current = e.clientX - sliderPos;
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || disabled || isLoading || isSuccess || isSlidToEnd) return;
+      const { maxDrag } = getTrackBounds();
+      const newPos = Math.max(0, Math.min(maxDrag, e.clientX - startXRef.current));
+      setSliderPos(newPos);
+    };
+
+    const handleMouseUp = () => {
+      if (!isDragging) return;
+      setIsDragging(false);
+      const { maxDrag } = getTrackBounds();
+
+      if (sliderPos >= maxDrag * 0.75) {
+        setSliderPos(maxDrag);
+        triggerComplete();
+      } else {
+        setSliderPos(0);
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, sliderPos, disabled, isLoading, isSuccess, isSlidToEnd, getTrackBounds, triggerComplete]);
+
+  const { maxDrag } = getTrackBounds();
+  const progressRatio = maxDrag > 0 ? sliderPos / maxDrag : 0;
+  const isGoogle = variant === 'google';
+
+  const isAuthenticating = (isLoading || isSlidToEnd) && !isSuccess;
+
+  // Track Background Styling
+  let trackBg = 'linear-gradient(90deg, rgba(26, 115, 232, 0.8), rgba(66, 133, 244, 0.95))';
+  if (isSuccess) {
+    trackBg = 'linear-gradient(90deg, #1e8e3e, #34a853)'; // Green
+  } else if (isAuthenticating) {
+    trackBg = 'linear-gradient(90deg, #f29900, #fbbc04)'; // Yellow
+  } else if (isGoogle) {
+    trackBg = 'linear-gradient(90deg, rgba(66, 133, 244, 0.15), rgba(66, 133, 244, 0.35))';
+  }
+
+  // Thumb Background Styling
+  let thumbBg = 'linear-gradient(135deg, #1a73e8 0%, #4285f4 100%)';
+  let thumbBorder = 'none';
+  let thumbColor = '#ffffff';
+
+  if (isSuccess) {
+    thumbBg = '#34a853'; // Green
+    thumbBorder = 'none';
+  } else if (isAuthenticating) {
+    thumbBg = '#fbbc04'; // Yellow
+    thumbBorder = 'none';
+  } else if (isGoogle) {
+    thumbBg = 'var(--bg-card)';
+    thumbBorder = '1.5px solid var(--border-color)';
+    thumbColor = 'inherit';
+  }
+
+  return (
+    <div
+      ref={trackRef}
+      style={{
+        width: '100%',
+        height: '52px',
+        background: 'var(--bg-elevated)',
+        borderRadius: 'var(--radius-full)',
+        border: '1.5px solid var(--border-color)',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'none',
+        boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.08)',
+      }}
+    >
+      {/* Active Fill Track that follows the thumb */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: `${sliderPos + 46}px`,
+          background: trackBg,
+          borderRadius: 'var(--radius-full)',
+          transition: isDragging ? 'none' : 'width 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), background 0.4s ease',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Shimmering Center Text (Idle) */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '52px',
+          right: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          opacity: isAuthenticating || isSuccess ? 0 : Math.max(0.1, 1 - progressRatio * 1.5),
+          transition: isDragging ? 'none' : 'opacity 0.25s ease',
+          pointerEvents: 'none',
+        }}
+      >
+        <span
+          className="slide-to-login-shimmer"
+          style={{
+            fontSize: '0.84rem',
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {text}
+        </span>
+        <Icon name="keyboard_double_arrow_right" size={18} color="var(--gdg-blue)" />
+      </div>
+
+      {/* Authenticating Text (Yellow state) */}
+      {isAuthenticating && !isSuccess && (
+        <div
+          style={{
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            color: '#202124',
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            zIndex: 3,
+            pointerEvents: 'none',
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          <Icon name="sync" size={18} className="spin" color="#202124" />
+          <span>Authenticating...</span>
+        </div>
+      )}
+
+      {/* Success Text (Green state) */}
+      {isSuccess && (
+        <div
+          style={{
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            color: '#ffffff',
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            zIndex: 3,
+            pointerEvents: 'none',
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          <Icon name="check_circle" size={18} color="#ffffff" className="slide-check-pop" />
+          <span>Authenticated!</span>
+        </div>
+      )}
+
+      {/* Draggable Slider Thumb */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'absolute',
+          left: '4px',
+          transform: `translateX(${sliderPos}px)`,
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          background: thumbBg,
+          color: thumbColor,
+          border: thumbBorder,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: isDragging
+            ? isSuccess
+              ? '0 4px 14px rgba(52, 168, 83, 0.5)'
+              : isAuthenticating
+              ? '0 4px 14px rgba(251, 188, 4, 0.5)'
+              : '0 4px 14px rgba(26, 115, 232, 0.5)'
+            : '0 2px 8px rgba(0, 0, 0, 0.15)',
+          cursor: disabled || isLoading || isSuccess ? 'not-allowed' : 'grab',
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), background 0.4s ease, border 0.4s ease',
+          zIndex: 4,
+          touchAction: 'none',
+        }}
+        className={!isDragging && !isAuthenticating && !isSuccess ? 'slide-thumb-glow' : ''}
+      >
+        {isSuccess ? (
+          <div className="slide-check-pop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="check" size={24} color="#ffffff" />
+          </div>
+        ) : isAuthenticating ? (
+          <Icon name="sync" size={20} className="spin" color="#202124" />
+        ) : isGoogle ? (
+          <GoogleGLogo />
+        ) : (
+          <Icon name="arrow_forward" size={20} color="#ffffff" />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +352,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
   // If already logged in, redirect to dashboard
@@ -28,57 +362,88 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Initialize Google Identity Services (GIS)
+  // Function to initialize Google GIS
+  const renderGoogleButton = useCallback(() => {
+    if (typeof window === 'undefined' || !(window as any).google?.accounts?.id) {
+      return;
+    }
+
+    try {
+      (window as any).google.accounts.id.initialize({
+        client_id: config.googleClientId,
+        callback: async (response: any) => {
+          if (response.credential) {
+            setErrorMsg(null);
+            setSubmitting(true);
+            const result = await loginWithGoogle(response.credential);
+            if (!result.success) {
+              setErrorMsg(result.error || 'Google authentication failed');
+              setSubmitting(false);
+              setLoginSuccess(false);
+            } else {
+              setLoginSuccess(true);
+              setTimeout(() => {
+                router.push('/');
+              }, 600);
+            }
+          }
+        },
+        auto_select: false,
+      });
+
+      if (googleBtnRef.current) {
+        googleBtnRef.current.innerHTML = '';
+        (window as any).google.accounts.id.renderButton(googleBtnRef.current, {
+          type: 'standard',
+          theme: theme === 'dark' ? 'filled_black' : 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'pill',
+          logo_alignment: 'left',
+          width: 320,
+        });
+      }
+    } catch (e) {
+      console.error('Google GIS Init error:', e);
+    }
+  }, [theme, loginWithGoogle, router]);
+
+  // Run Google rendering on mount, theme change, or tab switch
   useEffect(() => {
-    const initGoogle = () => {
-      if (typeof window === 'undefined' || !(window as any).google?.accounts?.id) {
+    const timer = setTimeout(renderGoogleButton, 200);
+    return () => clearTimeout(timer);
+  }, [renderGoogleButton, activeTab]);
+
+  const triggerGoogleSlideLogin = () => {
+    if (typeof window === 'undefined') return;
+
+    setErrorMsg(null);
+    setSubmitting(true);
+
+    // 1. Try to click the native GIS button
+    if (googleBtnRef.current) {
+      const btn = googleBtnRef.current.querySelector('div[role="button"]') as HTMLElement | null;
+      if (btn) {
+        btn.click();
         return;
       }
+    }
 
-      try {
-        (window as any).google.accounts.id.initialize({
-          client_id: config.googleClientId,
-          callback: async (response: any) => {
-            if (response.credential) {
-              setErrorMsg(null);
-              setSubmitting(true);
-              const result = await loginWithGoogle(response.credential);
-              if (!result.success) {
-                setErrorMsg(result.error || 'Google authentication failed');
-                setSubmitting(false);
-              } else {
-                router.push('/');
-              }
-            }
-          },
-          auto_select: false,
-        });
-
-        if (googleBtnRef.current) {
-          googleBtnRef.current.innerHTML = '';
-          (window as any).google.accounts.id.renderButton(googleBtnRef.current, {
-            type: 'standard',
-            theme: theme === 'dark' ? 'filled_black' : 'outline',
-            size: 'large',
-            text: 'signin_with',
-            shape: 'pill',
-            logo_alignment: 'left',
-            width: 320,
-          });
+    // 2. Fallback to GIS prompt
+    if ((window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          setSubmitting(false);
         }
-      } catch (e) {
-        console.error('Google GIS Init error:', e);
-      }
-    };
+      });
+    } else {
+      setSubmitting(false);
+    }
+  };
 
-    const timer = setTimeout(initGoogle, 300);
-    return () => clearTimeout(timer);
-  }, [config.googleClientId, theme, loginWithGoogle, router]);
-
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executePasswordLogin = async () => {
     if (!email || !password) {
-      setErrorMsg('Please enter both email and password.');
+      setErrorMsg('Please enter both email and password before sliding.');
       return;
     }
 
@@ -89,9 +454,18 @@ export default function LoginPage() {
     if (!result.success) {
       setErrorMsg(result.error || 'Login failed. Please check your credentials.');
       setSubmitting(false);
+      setLoginSuccess(false);
     } else {
-      router.push('/');
+      setLoginSuccess(true);
+      setTimeout(() => {
+        router.push('/');
+      }, 600);
     }
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executePasswordLogin();
   };
 
   return (
@@ -103,7 +477,7 @@ export default function LoginPage() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '24px',
+        padding: '24px 16px',
         position: 'relative',
       }}
     >
@@ -136,12 +510,12 @@ export default function LoginPage() {
       <div
         style={{
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '440px',
           background: 'var(--bg-card)',
           borderRadius: 'var(--radius-xl)',
           border: '1px solid var(--border-color)',
           boxShadow: 'var(--shadow-lg)',
-          padding: '36px 32px',
+          padding: '36px 28px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -176,7 +550,7 @@ export default function LoginPage() {
             textAlign: 'center',
           }}
         >
-          Sign in to access tasks, meetings, leave management & chapter events.
+          Sign in to access tasks, meetings, leave management &amp; chapter events.
         </p>
 
         {/* Tab switcher */}
@@ -244,7 +618,7 @@ export default function LoginPage() {
             }}
           >
             <Icon name="key" size={16} />
-            <span>Email & Password</span>
+            <span>Email &amp; Password</span>
           </button>
         </div>
 
@@ -272,59 +646,65 @@ export default function LoginPage() {
         )}
 
         {/* Google Authentication View */}
-        {activeTab === 'google' && (
+        <div
+          style={{
+            width: '100%',
+            display: activeTab === 'google' ? 'flex' : 'none',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '18px',
+          }}
+        >
           <div
             style={{
               width: '100%',
+              padding: '14px 16px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--md-primary-container)',
+              color: 'var(--md-on-primary-container)',
+              fontSize: '0.8125rem',
+              lineHeight: 1.4,
               display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '20px',
+              alignItems: 'flex-start',
+              gap: '10px',
             }}
           >
-            <div
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--md-primary-container)',
-                color: 'var(--md-on-primary-container)',
-                fontSize: '0.8125rem',
-                lineHeight: 1.4,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-              }}
-            >
-              <Icon name="info" size={18} color="var(--gdg-blue)" />
-              <div>
-                <strong>Recommended for 1st-time login:</strong> Sign in with your Google account.
-                You can configure your password directly from your <strong>Profile</strong> afterwards.
-              </div>
+            <Icon name="info" size={18} color="var(--gdg-blue)" />
+            <div>
+              <strong>Recommended for 1st-time login:</strong> Sign in with your Google account.
+              You can configure your password directly from your <strong>Profile</strong> afterwards.
             </div>
-
-            {/* Google GSI Native Button Anchor */}
-            <div
-              ref={googleBtnRef}
-              style={{
-                minHeight: '44px',
-                display: 'flex',
-                justifyContent: 'center',
-                width: '100%',
-              }}
-            />
-
-            {submitting && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gdg-blue)', fontSize: '0.875rem' }}>
-                <Icon name="sync" size={18} className="spin" />
-                <span>Authenticating with Google...</span>
-              </div>
-            )}
           </div>
-        )}
+
+          {/* Single Unified "Slide with Google" Slider Component */}
+          <div style={{ width: '100%' }}>
+            <SlideToLogin
+              onSlideComplete={triggerGoogleSlideLogin}
+              isLoading={submitting || isLoading}
+              isSuccess={loginSuccess}
+              disabled={submitting || isLoading}
+              variant="google"
+              text="Slide with Google"
+            />
+          </div>
+
+          {/* Hidden Google GSI Native Button (strictly for backend GIS callbacks) */}
+          <div
+            ref={googleBtnRef}
+            style={{
+              position: 'absolute',
+              opacity: 0,
+              pointerEvents: 'none',
+              width: '1px',
+              height: '1px',
+              overflow: 'hidden',
+              clip: 'rect(0 0 0 0)',
+            }}
+          />
+        </div>
 
         {/* Email & Password Form View */}
-        {activeTab === 'password' && (
+        <div style={{ width: '100%', display: activeTab === 'password' ? 'block' : 'none' }}>
           <form
             onSubmit={handlePasswordLogin}
             style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}
@@ -444,44 +824,19 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting || isLoading}
-              style={{
-                width: '100%',
-                padding: '11px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--gdg-blue)',
-                color: '#ffffff',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                opacity: submitting ? 0.7 : 1,
-                boxShadow: 'var(--shadow-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                marginTop: '6px',
-                transition: 'background 0.2s ease',
-              }}
-              className="m3-interactive"
-            >
-              {submitting ? (
-                <>
-                  <Icon name="sync" size={18} className="spin" />
-                  <span>Signing In...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <Icon name="arrow_forward" size={18} />
-                </>
-              )}
-            </button>
+            {/* "Slide to Log In" Component with Yellow & Green Transitions */}
+            <div style={{ marginTop: '8px' }}>
+              <SlideToLogin
+                onSlideComplete={executePasswordLogin}
+                isLoading={submitting || isLoading}
+                isSuccess={loginSuccess}
+                disabled={submitting || isLoading}
+                variant="default"
+                text="Slide to Sign In"
+              />
+            </div>
           </form>
-        )}
+        </div>
 
         {/* Footer info */}
         <div

@@ -76,32 +76,50 @@ export const Navbar: React.FC = () => {
         zIndex: 25,
       }}
     >
-      {/* Left side: Mobile Admin Button & Page Title on Navbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <Link
-          href="/admin"
-          className="mobile-admin-btn m3-interactive"
-          style={{
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 14px',
-            background: pathname === '/admin' ? 'var(--md-primary-container)' : 'var(--bg-card)',
-            color: pathname === '/admin' ? 'var(--md-on-primary-container)' : 'var(--gdg-blue)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-full)',
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            textDecoration: 'none',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <Icon name="admin_panel_settings" size={18} fill={pathname === '/admin'} />
-          <span>ADMIN</span>
-        </Link>
+      {/* Left side: Mobile-only App Logo Icon & Page Title on Navbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="mobile-only-logo" style={{ alignItems: 'center', gap: '12px' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textDecoration: 'none',
+            }}
+            title="GDG Management"
+          >
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                background: 'transparent',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
+                alt="GDG Logo"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
+          </Link>
+
+          <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
+        </div>
 
         <h1
           style={{
-            fontSize: '1.25rem',
+            fontSize: '1.2rem',
             fontWeight: 700,
             color: 'var(--text-main)',
             letterSpacing: '-0.02em',
@@ -309,7 +327,7 @@ export const Navbar: React.FC = () => {
                 </Link>
 
                 {/* Admin Link if role allows */}
-                {(user.role === 'LEAD' || user.role === 'DOMAIN_SENIOR') && (
+                {(user.role === 'DEVELOPER' || user.role === 'LEAD' || user.role === 'DOMAIN_SENIOR') && (
                   <Link
                     href="/admin"
                     onClick={() => setIsProfileOpen(false)}

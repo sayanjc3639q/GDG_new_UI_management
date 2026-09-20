@@ -1,4 +1,4 @@
-export type UserRole = 'MEMBER' | 'DOMAIN_SENIOR' | 'LEAD' | 'NON_MEMBER';
+export type UserRole = 'DEVELOPER' | 'LEAD' | 'DOMAIN_SENIOR' | 'MEMBER' | 'NON_MEMBER';
 
 export type UserDomain =
   | 'Graphic Designer'
@@ -13,6 +13,7 @@ export type UserDomain =
 export type LeadTitle =
   | 'Organizer'
   | 'Co-Organizer'
+  | 'Lead Developer'
   | 'Secretary'
   | 'Treasurer'
   | 'Domain Lead';
@@ -31,6 +32,8 @@ export interface User {
   bio?: string;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
   authProvider?: AuthProvider;
   hasPassword?: boolean;
   googleId?: string;
@@ -51,6 +54,8 @@ export interface CreateUserDto {
   bio?: string;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
 }
 
 export interface UpdateUserDto {
@@ -64,4 +69,6 @@ export interface UpdateUserDto {
   bio?: string;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
 }

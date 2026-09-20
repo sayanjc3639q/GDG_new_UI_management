@@ -5,6 +5,7 @@ import { Modal } from '@/shared/components/ui/modal';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { TeamMember, UpdateMemberDto, MemberRole, MemberDomain, LeadTitle } from '../team.types';
+import { normalizeGithubUrl, normalizeLinkedinUrl } from '@/shared/lib/url-normalizer';
 
 interface EditMemberModalProps {
   isOpen: boolean;
@@ -28,7 +29,10 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
     leadTitle: 'Domain Lead',
     github: '',
     linkedin: '',
+    phone: '',
+    dob: '',
   });
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -42,18 +46,46 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
         leadTitle: member.leadTitle || 'Domain Lead',
         github: member.github || '',
         linkedin: member.linkedin || '',
+        phone: member.phone || '',
+        dob: member.dob || '',
       });
+      setValidationError(null);
     }
   }, [member]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!member || !formData.name || !formData.email) return;
+    setValidationError(null);
+
+    // Normalize & validate GitHub URL
+    let normalizedGithub = '';
+    if (formData.github && formData.github.trim()) {
+      const res = normalizeGithubUrl(formData.github);
+      if (res.error) {
+        setValidationError(res.error);
+        return;
+      }
+      normalizedGithub = res.url;
+    }
+
+    // Normalize & validate LinkedIn URL
+    let normalizedLinkedin = '';
+    if (formData.linkedin && formData.linkedin.trim()) {
+      const res = normalizeLinkedinUrl(formData.linkedin);
+      if (res.error) {
+        setValidationError(res.error);
+        return;
+      }
+      normalizedLinkedin = res.url;
+    }
 
     try {
       setIsSubmitting(true);
       await onSubmit(member.id, {
         ...formData,
+        github: normalizedGithub || undefined,
+        linkedin: normalizedLinkedin || undefined,
         leadTitle: formData.role === 'LEAD' ? formData.leadTitle : undefined,
       });
       onClose();
@@ -65,6 +97,20 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Member Details" icon="edit">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {validationError && (
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--md-error-container)',
+              color: 'var(--md-on-error-container)',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+            }}
+          >
+            {validationError}
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <Input
             label="Full Name"
@@ -114,6 +160,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
               <option value="MEMBER">Member</option>
               <option value="DOMAIN_SENIOR">Domain Senior</option>
               <option value="LEAD">Lead</option>
+              <option value="DEVELOPER">Developer (Superadmin)</option>
             </select>
           </div>
 
@@ -148,7 +195,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
           </div>
         </div>
 
-        {/* Dynamic Lead Title selector (only visible when role is LEAD) */}
+        {/* Dynamic Lead Title selector (visible when role is LEAD) */}
         {formData.role === 'LEAD' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--gdg-yellow)' }}>
@@ -179,19 +226,38 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
           </div>
         )}
 
-        <Input
-          label="GitHub Profile URL"
-          placeholder="https://github.com/username"
-          value={formData.github || ''}
-          onChange={(e) => setFormData({ ...formData, github: e.target.value })}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <Input
+            label="Phone Number"
+            type="tel"
+            placeholder="+91 9876543210"
+            value={formData.phone || ''}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
 
-        <Input
-          label="LinkedIn Profile URL"
-          placeholder="https://linkedin.com/in/username"
-          value={formData.linkedin || ''}
-          onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-        />
+          <Input
+            label="Date of Birth (DOB)"
+            type="date"
+            value={formData.dob || ''}
+            onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <Input
+            label="GitHub Profile URL"
+            placeholder="https://github.com/username"
+            value={formData.github || ''}
+            onChange={(e) => setFormData({ ...formData, github: e.target.value })}
+          />
+
+          <Input
+            label="LinkedIn Profile URL"
+            placeholder="https://linkedin.com/in/username"
+            value={formData.linkedin || ''}
+            onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+          />
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
           <Button type="button" variant="secondary" onClick={onClose}>

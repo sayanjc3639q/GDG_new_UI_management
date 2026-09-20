@@ -26,6 +26,8 @@ interface AuthContextType {
     bio?: string;
     github?: string;
     linkedin?: string;
+    phone?: string;
+    dob?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   refreshProfile: () => Promise<void>;
   logout: () => Promise<void>;
@@ -187,6 +189,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bio?: string;
     github?: string;
     linkedin?: string;
+    phone?: string;
+    dob?: string;
   }) => {
     if (!user) return { success: false, error: 'Not authenticated' };
     try {

@@ -24,7 +24,7 @@ export default function AdminMembersPage() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'LEAD' | 'DOMAIN_SENIOR' | 'MEMBER'>('ALL');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'DEVELOPER' | 'LEAD' | 'DOMAIN_SENIOR' | 'MEMBER'>('ALL');
 
   const handleAddMember = async (dto: CreateMemberDto) => {
     await createMember(dto);
@@ -46,6 +46,7 @@ export default function AdminMembersPage() {
     return m.role === roleFilter;
   });
 
+  const devCount = filteredMembers.filter((m) => m.role === 'DEVELOPER').length;
   const leadCount = filteredMembers.filter((m) => m.role === 'LEAD').length;
   const seniorCount = filteredMembers.filter((m) => m.role === 'DOMAIN_SENIOR').length;
   const memberCount = filteredMembers.filter((m) => m.role === 'MEMBER').length;
@@ -111,6 +112,7 @@ export default function AdminMembersPage() {
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {[
             { id: 'ALL', label: 'All Roster', count: filteredMembers.length },
+            { id: 'DEVELOPER', label: 'Developers', count: devCount },
             { id: 'LEAD', label: 'Leads', count: leadCount },
             { id: 'DOMAIN_SENIOR', label: 'Domain Seniors', count: seniorCount },
             { id: 'MEMBER', label: 'Members', count: memberCount },
@@ -206,13 +208,17 @@ export default function AdminMembersPage() {
                               height: '36px',
                               borderRadius: 'var(--radius-full)',
                               background:
-                                member.role === 'LEAD'
+                                member.role === 'DEVELOPER'
+                                  ? 'linear-gradient(135deg, #a142f4 0%, #681da8 100%)'
+                                  : member.role === 'LEAD'
                                   ? 'var(--md-warning-container)'
                                   : member.role === 'DOMAIN_SENIOR'
                                   ? 'var(--md-primary-container)'
                                   : 'var(--bg-elevated)',
                               color:
-                                member.role === 'LEAD'
+                                member.role === 'DEVELOPER'
+                                  ? '#ffffff'
+                                  : member.role === 'LEAD'
                                   ? 'var(--gdg-yellow)'
                                   : member.role === 'DOMAIN_SENIOR'
                                   ? 'var(--gdg-blue)'
@@ -255,7 +261,11 @@ export default function AdminMembersPage() {
                         )}
                       </td>
                       <td style={{ padding: '14px 20px' }}>
-                        {member.role === 'LEAD' ? (
+                        {member.role === 'DEVELOPER' ? (
+                          <Badge variant="purple" style={{ background: 'linear-gradient(135deg, #a142f4 0%, #681da8 100%)', color: '#fff', border: 'none' }}>
+                            Developer
+                          </Badge>
+                        ) : member.role === 'LEAD' ? (
                           <Badge variant="yellow">
                             Lead{member.leadTitle ? ` (${member.leadTitle})` : ''}
                           </Badge>

@@ -19,6 +19,8 @@ export class UsersService {
       hasPassword: Boolean(d.password),
       github: d.github,
       linkedin: d.linkedin,
+      phone: d.phone,
+      dob: d.dob,
       joinedAt: d.createdAt ? d.createdAt.toISOString() : new Date().toISOString(),
     }));
   }
@@ -42,6 +44,8 @@ export class UsersService {
       hasPassword: Boolean(d.password),
       github: d.github,
       linkedin: d.linkedin,
+      phone: d.phone,
+      dob: d.dob,
       joinedAt: d.createdAt ? d.createdAt.toISOString() : new Date().toISOString(),
     };
   }
@@ -63,6 +67,8 @@ export class UsersService {
       bio: dto.bio,
       github: dto.github,
       linkedin: dto.linkedin,
+      phone: dto.phone,
+      dob: dto.dob,
     });
 
     return {
@@ -79,6 +85,8 @@ export class UsersService {
       hasPassword: false,
       github: created.github,
       linkedin: created.linkedin,
+      phone: created.phone,
+      dob: created.dob,
       joinedAt: created.createdAt ? created.createdAt.toISOString() : new Date().toISOString(),
     };
   }
@@ -108,6 +116,8 @@ export class UsersService {
       hasPassword: Boolean(updated.password),
       github: updated.github,
       linkedin: updated.linkedin,
+      phone: updated.phone,
+      dob: updated.dob,
       joinedAt: updated.createdAt ? updated.createdAt.toISOString() : new Date().toISOString(),
     };
   }

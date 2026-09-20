@@ -5,7 +5,7 @@ interface TasksState {
   items: Task[];
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
-  filter: 'ALL' | 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
+  filter: 'ALL' | 'TODO' | 'IN_PROGRESS' | 'SUBMITTED' | 'REJECTED' | 'ACCEPTED' | 'COMPLETED';
   searchQuery: string;
   lastFetched: number | null;
 }
@@ -52,6 +52,14 @@ export const updateTaskThunk = createAsyncThunk<Task, { id: string; updates: Par
   }
 );
 
+export const deleteTaskThunk = createAsyncThunk<string, string>(
+  'tasks/deleteTask',
+  async (id) => {
+    await TasksService.deleteTask(id);
+    return id;
+  }
+);
+
 export const tasksSlice = createSlice({
   name: 'tasks',
   initialState,
@@ -95,6 +103,10 @@ export const tasksSlice = createSlice({
         if (index !== -1) {
           state.items[index] = action.payload;
         }
+      })
+      // deleteTaskThunk
+      .addCase(deleteTaskThunk.fulfilled, (state, action) => {
+        state.items = state.items.filter((t) => t.id !== action.payload);
       });
   },
 });

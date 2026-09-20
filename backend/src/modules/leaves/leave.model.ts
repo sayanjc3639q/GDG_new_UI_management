@@ -26,7 +26,7 @@ const LeaveSchema = new Schema<ILeaveDocument>(
     startDate: { type: String, required: true },
     endDate: { type: String, required: true },
     reason: { type: String, required: true },
-    handoverPerson: { type: String, required: true },
+    handoverPerson: { type: String, default: '' },
     status: {
       type: String,
       enum: ['PENDING', 'APPROVED', 'REJECTED'],

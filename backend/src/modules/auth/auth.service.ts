@@ -100,6 +100,10 @@ export class AuthService {
       leadTitle: doc.leadTitle,
       avatarUrl: doc.avatarUrl,
       bio: doc.bio,
+      github: doc.github,
+      linkedin: doc.linkedin,
+      phone: doc.phone,
+      dob: doc.dob,
       authProvider: doc.authProvider,
       hasPassword:
         typeof hasPasswordOverride === 'boolean'
@@ -167,13 +171,20 @@ export class AuthService {
     let user = await UserModel.findOne({ email }).select('+password');
 
     if (user) {
+      // Auto upgrade SUPERADMIN_EMAIL to DEVELOPER
+      let modified = false;
+      if (email === env.SUPERADMIN_EMAIL.toLowerCase() && user.role !== 'DEVELOPER') {
+        user.role = 'DEVELOPER';
+        user.leadTitle = undefined;
+        modified = true;
+      }
+
       // Check role permissions
       if (!isMemberAccessAllowed(user.role)) {
         throw new ForbiddenError('Access Denied: Non-members cannot access the chapter portal.');
       }
 
       // Link Google ID and update profile picture if not set
-      let modified = false;
       if (!user.googleId && googleId) {
         user.googleId = googleId;
         user.authProvider = user.password ? 'both' : 'google';
@@ -189,8 +200,7 @@ export class AuthService {
     } else {
       // First-time Google User Registration
       const isSuperadmin = email === env.SUPERADMIN_EMAIL.toLowerCase();
-      const initialRole = isSuperadmin ? 'LEAD' : 'MEMBER';
-      const initialLeadTitle = isSuperadmin ? 'Organizer' : undefined;
+      const initialRole = isSuperadmin ? 'DEVELOPER' : 'MEMBER';
 
       user = await UserModel.create({
         name,
@@ -199,7 +209,7 @@ export class AuthService {
         avatarUrl,
         authProvider: 'google',
         role: initialRole,
-        leadTitle: initialLeadTitle,
+        leadTitle: undefined,
       });
     }
 
@@ -241,6 +251,13 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
+    // Auto upgrade SUPERADMIN_EMAIL to DEVELOPER
+    if (user.email === env.SUPERADMIN_EMAIL.toLowerCase() && user.role !== 'DEVELOPER') {
+      user.role = 'DEVELOPER';
+      user.leadTitle = undefined;
+      await user.save();
+    }
+
     if (!isMemberAccessAllowed(user.role)) {
       throw new ForbiddenError('Access Denied: Non-members cannot access the chapter portal.');
     }
@@ -274,7 +291,10 @@ export class AuthService {
     }
 
     const isSuperadmin = email === env.SUPERADMIN_EMAIL.toLowerCase();
-    const assignedRole = isSuperadmin ? 'LEAD' : dto.role || 'MEMBER';
+    const assignedRole = isSuperadmin ? 'DEVELOPER' : dto.role || 'MEMBER';
+    const assignedLeadTitle = isSuperadmin
+      ? undefined
+      : (assignedRole === 'LEAD' ? dto.leadTitle || 'Domain Lead' : undefined);
 
     if (!isMemberAccessAllowed(assignedRole)) {
       throw new ForbiddenError('Access Denied: Non-members cannot register for portal access.');
@@ -287,7 +307,7 @@ export class AuthService {
       authProvider: hashedPassword ? 'local' : 'google',
       role: assignedRole,
       domain: dto.domain,
-      leadTitle: assignedRole === 'LEAD' ? dto.leadTitle || (isSuperadmin ? 'Organizer' : 'Domain Lead') : undefined,
+      leadTitle: assignedLeadTitle,
       avatarUrl: dto.avatarUrl,
     });
 
@@ -437,6 +457,14 @@ export class AuthService {
     if (!user) {
       throw new NotFoundError('User profile not found');
     }
+
+    // Auto upgrade SUPERADMIN_EMAIL to DEVELOPER
+    if (user.email === env.SUPERADMIN_EMAIL.toLowerCase() && user.role !== 'DEVELOPER') {
+      user.role = 'DEVELOPER';
+      user.leadTitle = undefined;
+      await user.save();
+    }
+
     return this.formatAuthUser(user, Boolean(user.password));
   }
 }

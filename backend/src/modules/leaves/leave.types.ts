@@ -9,7 +9,7 @@ export interface LeaveApplication {
   startDate: string;
   endDate: string;
   reason: string;
-  handoverPerson: string;
+  handoverPerson?: string;
   status: LeaveStatus;
   createdAt: string;
 }
@@ -21,5 +21,5 @@ export interface CreateLeaveDto {
   startDate: string;
   endDate: string;
   reason: string;
-  handoverPerson: string;
+  handoverPerson?: string;
 }

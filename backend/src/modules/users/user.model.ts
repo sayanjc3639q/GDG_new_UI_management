@@ -15,6 +15,8 @@ export interface IUserDocument extends Document {
   bio?: string;
   github?: string;
   linkedin?: string;
+  phone?: string;
+  dob?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +35,7 @@ const UserSchema = new Schema<IUserDocument>(
     },
     role: {
       type: String,
-      enum: ['MEMBER', 'DOMAIN_SENIOR', 'LEAD', 'NON_MEMBER'],
+      enum: ['DEVELOPER', 'LEAD', 'DOMAIN_SENIOR', 'MEMBER', 'NON_MEMBER'],
       default: 'MEMBER',
     },
     domain: {
@@ -51,12 +53,14 @@ const UserSchema = new Schema<IUserDocument>(
     },
     leadTitle: {
       type: String,
-      enum: ['Organizer', 'Co-Organizer', 'Secretary', 'Treasurer', 'Domain Lead'],
+      enum: ['Organizer', 'Co-Organizer', 'Lead Developer', 'Secretary', 'Treasurer', 'Domain Lead'],
     },
     avatarUrl: { type: String },
     bio: { type: String, trim: true },
     github: { type: String },
     linkedin: { type: String },
+    phone: { type: String },
+    dob: { type: String },
   },
   { timestamps: true }
 );

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@/shared/components/ui/icon';
+import { useAuth } from '../context/auth-context';
 
 export const navItems = [
   {
@@ -35,11 +36,24 @@ export const navItems = [
     label: 'ADMIN',
     href: '/admin',
     iconName: 'admin_panel_settings',
+    adminOnly: true,
   },
 ];
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const isPrivileged =
+    user && (user.role === 'DEVELOPER' || user.role === 'LEAD' || user.role === 'DOMAIN_SENIOR');
+
+  // Filter out ADMIN for regular members
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.adminOnly) {
+      return isPrivileged;
+    }
+    return true;
+  });
 
   return (
     <aside
@@ -119,7 +133,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Links - Core Management Rail including ADMIN */}
+      {/* Navigation Links */}
       <nav
         style={{
           display: 'flex',
@@ -130,7 +144,7 @@ export const Sidebar: React.FC = () => {
           overflowY: 'auto',
         }}
       >
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = pathname === item.href;
           const isAdmin = item.label === 'ADMIN';
 

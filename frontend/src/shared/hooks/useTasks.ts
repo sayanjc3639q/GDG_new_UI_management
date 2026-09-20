@@ -6,6 +6,7 @@ import {
   fetchTasks,
   createTaskThunk,
   updateTaskThunk,
+  deleteTaskThunk,
   setFilter,
   setSearchQuery,
   optimisticToggleTaskStatus,
@@ -64,8 +65,10 @@ export function useTasks(autoFetch = true) {
   );
 
   const handleUpdateStatus = useCallback(
-    async (id: string, newStatus: Task['status']) => {
-      return await dispatch(updateTaskThunk({ id, updates: { status: newStatus } })).unwrap();
+    async (id: string, newStatus: Task['status'], extraUpdates?: Partial<Task>) => {
+      return await dispatch(
+        updateTaskThunk({ id, updates: { status: newStatus, ...(extraUpdates || {}) } })
+      ).unwrap();
     },
     [dispatch]
   );
@@ -80,6 +83,13 @@ export function useTasks(autoFetch = true) {
   const handleSetSearch = useCallback(
     (query: string) => {
       dispatch(setSearchQuery(query));
+    },
+    [dispatch]
+  );
+
+  const handleDeleteTask = useCallback(
+    async (id: string) => {
+      return await dispatch(deleteTaskThunk(id)).unwrap();
     },
     [dispatch]
   );
@@ -100,6 +110,7 @@ export function useTasks(autoFetch = true) {
     createTask: handleCreateTask,
     toggleTaskStatus: handleToggleStatus,
     updateTaskStatus: handleUpdateStatus,
+    deleteTask: handleDeleteTask,
     setFilter: handleSetFilter,
     setSearch: handleSetSearch,
     refreshTasks,
