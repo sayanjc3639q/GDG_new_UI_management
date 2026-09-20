@@ -8,16 +8,8 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
 import { Modal } from '@/shared/components/ui/modal';
 import { EmptyState } from '@/shared/components/ui/empty-state';
-import {
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Clock,
-  MapPin,
-  Users,
-} from 'lucide-react';
-import { EventsService, GDGEvent, CreateEventDto, EventType } from '@/modules/events';
+import { Icon } from '@/shared/components/ui/icon';
+import { EventsService, GDGEvent, EventType } from '@/modules/events';
 
 export default function CalendarPage() {
   const [currentMonth] = useState('September 2026');
@@ -88,75 +80,99 @@ export default function CalendarPage() {
   return (
     <DashboardShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>Operations Calendar</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
-              Schedule, track, and sync GDG chapter activities and internal milestones.
-            </p>
+        {/* Month Navigation & Controls & Add Schedule Action */}
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '16px 24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: 'var(--shadow-sm)',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--md-primary-container)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--md-primary)',
+              }}
+            >
+              <Icon name="calendar_month" size={20} fill />
+            </span>
+            <span style={{ fontWeight: 600, fontSize: '1.125rem', color: 'var(--text-main)' }}>
+              {currentMonth}
+            </span>
+
+            <div style={{ display: 'flex', gap: '8px', marginLeft: '8px' }}>
+              <button
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-full)',
+                  color: 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                className="m3-interactive"
+                aria-label="Previous month"
+              >
+                <Icon name="chevron_left" size={20} />
+              </button>
+              <button
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-full)',
+                  color: 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                className="m3-interactive"
+                aria-label="Next month"
+              >
+                <Icon name="chevron_right" size={20} />
+              </button>
+            </div>
           </div>
 
           <Button
             variant="primary"
-            leftIcon={<Plus size={16} />}
+            leftIcon={<Icon name="add" size={18} />}
             onClick={() => setIsAddModalOpen(true)}
           >
             Add Schedule
           </Button>
         </div>
 
-        {/* Month Navigation & Controls */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            padding: '14px 20px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <CalendarIcon size={18} color="var(--gdg-blue)" />
-            <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
-              {currentMonth}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              style={{
-                padding: '6px 10px',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              style={{
-                padding: '6px 10px',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
 
         {/* Calendar Grid & Events List Layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '24px',
+          }}
+        >
           {/* Month Mini Grid */}
-          <Card style={{ padding: '20px' }}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '16px' }}>
+          <Card style={{ padding: '24px', borderRadius: 'var(--radius-xl)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '16px' }}>
               September 2026 Overview
             </h3>
 
@@ -164,19 +180,19 @@ export default function CalendarPage() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, 1fr)',
-                gap: '4px',
+                gap: '6px',
                 textAlign: 'center',
-                fontSize: '0.75rem',
+                fontSize: '0.8125rem',
               }}
             >
               {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((d) => (
-                <div key={d} style={{ padding: '6px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                <div key={d} style={{ padding: '8px', fontWeight: 600, color: 'var(--text-muted)' }}>
                   {d}
                 </div>
               ))}
 
               {daysInMonth.map((day) => {
-                const isToday = day === 17;
+                const isToday = day === 20;
                 return (
                   <div
                     key={day}
@@ -186,12 +202,14 @@ export default function CalendarPage() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: isToday ? 'var(--gdg-blue)' : 'transparent',
-                      color: isToday ? '#ffffff' : 'var(--text-main)',
-                      fontWeight: isToday ? 700 : 400,
-                      border: '1px solid var(--border-subtle)',
+                      background: isToday ? 'var(--md-primary)' : 'transparent',
+                      color: isToday ? 'var(--md-on-primary)' : 'var(--text-main)',
+                      fontWeight: isToday ? 600 : 400,
+                      borderRadius: 'var(--radius-full)',
+                      border: isToday ? 'none' : '1px solid transparent',
                       position: 'relative',
                     }}
+                    className={!isToday ? 'm3-interactive' : ''}
                   >
                     <span>{day}</span>
                   </div>
@@ -201,8 +219,8 @@ export default function CalendarPage() {
           </Card>
 
           {/* Scheduled Sessions List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-main)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>
               Scheduled Events ({events.length})
             </h3>
 
@@ -212,29 +230,47 @@ export default function CalendarPage() {
                 description="Nothing to see here yet. Add a workshop or study jam to the calendar."
                 actionLabel="Add Schedule"
                 onAction={() => setIsAddModalOpen(true)}
-                icon={<CalendarIcon size={20} />}
+                icon="calendar_month"
               />
             ) : (
               events.map((evt) => (
-                <Card key={evt.id} style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Card
+                  key={evt.id}
+                  style={{
+                    padding: '18px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    borderRadius: 'var(--radius-lg)',
+                  }}
+                  className="m3-interactive"
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-main)' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-main)' }}>
                       {evt.title}
                     </span>
                     {getTypeBadge(evt.type)}
                   </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '16px',
+                      fontSize: '0.8125rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={13} color="var(--gdg-blue)" />
+                      <Icon name="schedule" size={16} color="var(--gdg-blue)" />
                       <span>{evt.startDate}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <MapPin size={13} color="var(--gdg-red)" />
+                      <Icon name="location_on" size={16} color="var(--gdg-red)" />
                       <span>{evt.location}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Users size={13} color="var(--gdg-green)" />
+                      <Icon name="group" size={16} color="var(--gdg-green)" />
                       <span>{evt.capacity} Capacity</span>
                     </div>
                   </div>
@@ -245,8 +281,13 @@ export default function CalendarPage() {
         </div>
 
         {/* Modal to Add Schedule */}
-        <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Schedule New Session">
-          <form onSubmit={handleAddEvent} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <Modal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          title="Schedule New Session"
+          icon="event"
+        >
+          <form onSubmit={handleAddEvent} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <Input
               label="Session Title"
               placeholder="e.g. Google Cloud Study Jam 2026"
@@ -274,7 +315,7 @@ export default function CalendarPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
                   Schedule Type
                 </label>
                 <select
@@ -282,11 +323,14 @@ export default function CalendarPage() {
                   onChange={(e) => setNewEventType(e.target.value as EventType)}
                   style={{
                     width: '100%',
+                    height: '42px',
                     background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
-                    padding: '9px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '0 14px',
                     color: 'var(--text-main)',
                     fontSize: '0.875rem',
+                    fontFamily: 'var(--font-main)',
                     outline: 'none',
                   }}
                 >
@@ -307,7 +351,7 @@ export default function CalendarPage() {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
               <Button type="button" variant="secondary" onClick={() => setIsAddModalOpen(false)}>
                 Cancel
               </Button>

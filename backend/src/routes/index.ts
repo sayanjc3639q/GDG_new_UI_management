@@ -5,7 +5,6 @@ import { createEventsRouter } from '../modules/events';
 import { createTasksRouter } from '../modules/tasks';
 import { createMeetingsRouter } from '../modules/meetings';
 import { createLeavesRouter } from '../modules/leaves';
-import { createRsvpRouter } from '../modules/rsvp';
 import { TaskModel } from '../modules/tasks/task.model';
 import { MeetingModel } from '../modules/meetings/meeting.model';
 import { LeaveModel } from '../modules/leaves/leave.model';
@@ -73,14 +72,13 @@ export function createApiRouter(): Router {
     }
   });
 
-  // Mount Domain Modules
+  // Mount Domain Modules (Modular Monolith)
   router.use('/auth', createAuthRouter());
   router.use('/users', createUsersRouter());
   router.use('/events', createEventsRouter());
   router.use('/tasks', createTasksRouter());
   router.use('/meetings', createMeetingsRouter());
   router.use('/leaves', createLeavesRouter());
-  router.use('/rsvp', createRsvpRouter());
 
   return router;
 }

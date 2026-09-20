@@ -23,7 +23,6 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
     capacity: 100,
     tags: ['Tech'],
   });
-  const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +39,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New GDG Event">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create New GDG Event" icon="event">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <Input
           label="Event Title"
@@ -51,7 +50,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#9ca3af' }}>Description</label>
+          <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>Description</label>
           <textarea
             placeholder="Overview of the workshop agenda and requirements..."
             rows={3}
@@ -59,12 +58,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             style={{
               width: '100%',
-              background: 'rgba(17, 24, 39, 0.8)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '8px',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-sm)',
               padding: '10px 14px',
-              color: '#f3f4f6',
+              color: 'var(--text-main)',
               fontSize: '0.875rem',
+              fontFamily: 'var(--font-main)',
               outline: 'none',
               resize: 'vertical',
             }}
@@ -73,18 +73,20 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#9ca3af' }}>Event Type</label>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>Event Type</label>
             <select
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value as EventType })}
               style={{
                 width: '100%',
-                background: 'rgba(17, 24, 39, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                color: '#f3f4f6',
+                height: '42px',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0 14px',
+                color: 'var(--text-main)',
                 fontSize: '0.875rem',
+                fontFamily: 'var(--font-main)',
                 outline: 'none',
               }}
             >

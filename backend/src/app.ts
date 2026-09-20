@@ -1,5 +1,6 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { requestLogger } from './common/middlewares/logger.middleware';
 import { errorHandler } from './common/middlewares/error.middleware';
@@ -16,6 +17,7 @@ export function createApp(): Application {
       credentials: true,
     })
   );
+  app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(requestLogger);

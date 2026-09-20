@@ -3,40 +3,38 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Calendar,
-  CheckSquare,
-  Video,
-  FileText,
-  Boxes,
-} from 'lucide-react';
+import { Icon } from '@/shared/components/ui/icon';
 
 export const navItems = [
   {
     label: 'Dashboard',
     href: '/',
-    icon: <LayoutDashboard size={18} />,
+    iconName: 'dashboard',
   },
   {
     label: 'Calendar',
     href: '/calendar',
-    icon: <Calendar size={18} />,
+    iconName: 'calendar_month',
   },
   {
-    label: 'Task',
+    label: 'Tasks',
     href: '/tasks',
-    icon: <CheckSquare size={18} />,
+    iconName: 'check_circle',
   },
   {
-    label: 'Meeting',
+    label: 'Meetings',
     href: '/meetings',
-    icon: <Video size={18} />,
+    iconName: 'videocam',
   },
   {
-    label: 'Leave Application',
-    href: '/leave',
-    icon: <FileText size={18} />,
+    label: 'All',
+    href: '/all',
+    iconName: 'grid_view',
+  },
+  {
+    label: 'ADMIN',
+    href: '/admin',
+    iconName: 'admin_panel_settings',
   },
 ];
 
@@ -47,7 +45,7 @@ export const Sidebar: React.FC = () => {
     <aside
       className="desktop-sidebar"
       style={{
-        width: '240px',
+        width: '260px',
         minHeight: '100vh',
         background: 'var(--bg-sidebar)',
         borderRight: '1px solid var(--border-color)',
@@ -56,45 +54,86 @@ export const Sidebar: React.FC = () => {
         top: 0,
         height: '100vh',
         zIndex: 30,
+        padding: '16px 12px',
+        boxSizing: 'border-box',
       }}
     >
       {/* Chapter Branding */}
       <div
         style={{
-          padding: '20px',
+          padding: '12px 14px 20px 14px',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '12px',
         }}
       >
         <div
           style={{
-            width: '32px',
-            height: '32px',
-            background: 'var(--gdg-blue)',
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-md)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#ffffff',
+            overflow: 'hidden',
           }}
         >
-          <Boxes size={18} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="GDG Logo"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
+          />
         </div>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
-            GDG PORTAL
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: '1rem',
+              color: 'var(--text-main)',
+              letterSpacing: '-0.02em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <span>GDG</span>
+            <span style={{ color: 'var(--gdg-blue)', fontWeight: 800 }}>Management</span>
           </div>
-          <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div
+            style={{
+              fontSize: '0.6875rem',
+              color: 'var(--text-muted)',
+              fontWeight: 500,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}
+          >
             Campus HIT
           </div>
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '12px 0' }}>
+      {/* Navigation Links - Core Management Rail including ADMIN */}
+      <nav
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          flex: 1,
+          padding: '16px 0',
+          overflowY: 'auto',
+        }}
+      >
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const isAdmin = item.label === 'ADMIN';
+
           return (
             <Link
               key={item.href}
@@ -102,40 +141,40 @@ export const Sidebar: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: '12px 20px',
+                gap: '14px',
+                padding: '10px 16px',
                 fontSize: '0.875rem',
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
-                background: isActive ? 'var(--bg-hover)' : 'transparent',
-                borderLeft: isActive ? '3px solid var(--gdg-blue)' : '3px solid transparent',
-                transition: 'all 0.15s ease',
+                fontWeight: isActive ? 600 : 500,
+                color: isActive
+                  ? 'var(--md-on-primary-container)'
+                  : isAdmin
+                  ? 'var(--gdg-blue)'
+                  : 'var(--text-muted)',
+                background: isActive ? 'var(--md-primary-container)' : 'transparent',
+                borderRadius: 'var(--radius-full)',
+                transition: 'background-color 0.15s ease, color 0.15s ease',
               }}
+              className="m3-interactive"
             >
-              <span style={{ color: isActive ? 'var(--gdg-blue)' : 'var(--text-subtle)' }}>
-                {item.icon}
+              <Icon
+                name={item.iconName}
+                size={22}
+                fill={isActive}
+                color={
+                  isActive
+                    ? 'var(--md-on-primary-container)'
+                    : isAdmin
+                    ? 'var(--gdg-blue)'
+                    : 'var(--text-subtle)'
+                }
+              />
+              <span style={{ letterSpacing: '0.01em', fontWeight: isAdmin ? 700 : undefined }}>
+                {item.label}
               </span>
-              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
-
-      {/* Footer Info */}
-      <div
-        style={{
-          padding: '16px 20px',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '0.75rem',
-          color: 'var(--text-subtle)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-        }}
-      >
-        <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>GDG HIT 2026</span>
-        <span>Management System</span>
-      </div>
     </aside>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { GDGEvent } from '../events.types';
 import { Card } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { Calendar, MapPin, Users, Globe, Video } from 'lucide-react';
+import { Icon } from '@/shared/components/ui/icon';
 
 interface EventCardProps {
   event: GDGEvent;
@@ -40,23 +40,28 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSelect }) => {
         justifyContent: 'space-between',
         cursor: 'pointer',
         gap: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 'var(--radius-xl)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-sm)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       }}
+      className="m3-interactive"
     >
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <Badge variant={getTypeColor(event.type)}>{event.type.replace('_', ' ')}</Badge>
-          <span style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Calendar size={14} />
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Icon name="calendar_month" size={16} color="var(--text-subtle)" />
             {formattedDate}
           </span>
         </div>
 
-        <h4 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#f9fafb', marginBottom: '8px' }}>
+        <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
           {event.title}
         </h4>
 
-        <p style={{ fontSize: '0.8125rem', color: '#9ca3af', lineHeight: 1.5, marginBottom: '16px' }}>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '16px' }}>
           {event.description}
         </p>
 
@@ -67,10 +72,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSelect }) => {
               key={tag}
               style={{
                 fontSize: '0.6875rem',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: '#cbd5e1',
+                padding: '3px 10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-muted)',
+                fontWeight: 500,
               }}
             >
               #{tag}
@@ -85,20 +91,24 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSelect }) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingTop: '12px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid var(--border-color)',
           fontSize: '0.75rem',
-          color: '#9ca3af',
+          color: 'var(--text-muted)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {event.isVirtual ? <Video size={14} color="#8ab4f8" /> : <MapPin size={14} color="#EA4335" />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {event.isVirtual ? (
+            <Icon name="videocam" size={16} color="var(--gdg-blue)" />
+          ) : (
+            <Icon name="location_on" size={16} color="var(--gdg-red)" />
+          )}
           <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {event.location}
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Users size={14} color="#34A853" />
+          <Icon name="group" size={16} color="var(--gdg-green)" />
           <span>{event.capacity} Capacity</span>
         </div>
       </div>

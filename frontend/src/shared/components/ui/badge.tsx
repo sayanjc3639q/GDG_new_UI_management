@@ -3,12 +3,14 @@ import React from 'react';
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'blue' | 'red' | 'yellow' | 'green' | 'gray' | 'purple';
   size?: 'sm' | 'md';
+  pill?: boolean;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = 'blue',
   size = 'md',
+  pill = true,
   style,
   ...props
 }) => {
@@ -16,33 +18,33 @@ export const Badge: React.FC<BadgeProps> = ({
     switch (variant) {
       case 'blue':
         return {
-          background: 'rgba(66, 133, 244, 0.12)',
-          color: 'var(--gdg-blue)',
-          border: '1px solid rgba(66, 133, 244, 0.3)',
+          background: 'var(--md-primary-container)',
+          color: 'var(--md-on-primary-container)',
+          border: '1px solid transparent',
         };
       case 'red':
         return {
-          background: 'rgba(234, 67, 53, 0.12)',
-          color: 'var(--gdg-red)',
-          border: '1px solid rgba(234, 67, 53, 0.3)',
+          background: 'var(--md-error-container)',
+          color: 'var(--md-on-error-container)',
+          border: '1px solid transparent',
         };
       case 'yellow':
         return {
-          background: 'rgba(251, 188, 4, 0.12)',
-          color: 'var(--gdg-yellow)',
-          border: '1px solid rgba(251, 188, 4, 0.3)',
+          background: 'var(--md-warning-container)',
+          color: 'var(--md-on-warning-container)',
+          border: '1px solid transparent',
         };
       case 'green':
         return {
-          background: 'rgba(52, 168, 83, 0.12)',
-          color: 'var(--gdg-green)',
-          border: '1px solid rgba(52, 168, 83, 0.3)',
+          background: 'var(--md-success-container)',
+          color: 'var(--md-on-success-container)',
+          border: '1px solid transparent',
         };
       case 'purple':
         return {
-          background: 'rgba(168, 85, 247, 0.12)',
-          color: '#a855f7',
-          border: '1px solid rgba(168, 85, 247, 0.3)',
+          background: 'var(--md-tertiary-container)',
+          color: 'var(--md-tertiary)',
+          border: '1px solid transparent',
         };
       case 'gray':
       default:
@@ -57,13 +59,13 @@ export const Badge: React.FC<BadgeProps> = ({
   const badgeStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '4px',
-    borderRadius: '0px',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    padding: size === 'sm' ? '2px 6px' : '3px 8px',
+    gap: '6px',
+    borderRadius: pill ? 'var(--radius-full)' : 'var(--radius-sm)',
+    fontWeight: 600,
+    letterSpacing: '0.02em',
+    padding: size === 'sm' ? '3px 10px' : '5px 12px',
     fontSize: size === 'sm' ? '0.6875rem' : '0.75rem',
+    fontFamily: 'var(--font-main)',
     ...getVariantStyles(),
     ...style,
   };

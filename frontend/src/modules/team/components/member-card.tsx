@@ -2,21 +2,24 @@ import React from 'react';
 import { TeamMember } from '../team.types';
 import { Card } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { Mail, Code2, Globe } from 'lucide-react';
+import { Icon } from '@/shared/components/ui/icon';
 
 interface MemberCardProps {
   member: TeamMember;
 }
 
 export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
-  const getRoleBadge = (role: TeamMember['role']) => {
+  const getRoleBadge = (role: TeamMember['role'], leadTitle?: TeamMember['leadTitle']) => {
     switch (role) {
       case 'LEAD':
-        return <Badge variant="blue">Chapter Lead</Badge>;
-      case 'CO_LEAD':
-        return <Badge variant="yellow">Co-Lead</Badge>;
-      case 'ORGANIZER':
-        return <Badge variant="green">Organizer</Badge>;
+        return (
+          <Badge variant="yellow">
+            Lead{leadTitle ? ` • ${leadTitle}` : ''}
+          </Badge>
+        );
+      case 'DOMAIN_SENIOR':
+        return <Badge variant="blue">Domain Senior</Badge>;
+      case 'MEMBER':
       default:
         return <Badge variant="gray">Member</Badge>;
     }
@@ -38,34 +41,58 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
-        gap: '14px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        gap: '16px',
+        padding: '24px',
+        borderRadius: 'var(--radius-xl)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-sm)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       }}
+      className="m3-interactive"
     >
       <div
         style={{
-          width: '64px',
-          height: '64px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #4285F4 0%, #34A853 100%)',
+          width: '68px',
+          height: '68px',
+          borderRadius: 'var(--radius-full)',
+          background:
+            member.role === 'LEAD'
+              ? 'linear-gradient(135deg, var(--gdg-yellow) 0%, #ea8600 100%)'
+              : member.role === 'DOMAIN_SENIOR'
+              ? 'linear-gradient(135deg, var(--gdg-blue) 0%, #174ea6 100%)'
+              : 'linear-gradient(135deg, #5f6368 0%, #3c4043 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#ffffff',
           fontWeight: 700,
           fontSize: '1.25rem',
-          boxShadow: '0 4px 16px rgba(66, 133, 244, 0.3)',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
-        {getInitials(member.name)}
+        {member.avatarUrl ? (
+          <img
+            src={member.avatarUrl}
+            alt={member.name}
+            style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-full)', objectFit: 'cover' }}
+          />
+        ) : (
+          getInitials(member.name)
+        )}
       </div>
 
       <div>
-        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f9fafb', marginBottom: '4px' }}>
+        <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
           {member.name}
         </h4>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-          {getRoleBadge(member.role)}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {member.gdgId && (
+            <Badge variant="blue" style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+              {member.gdgId}
+            </Badge>
+          )}
+          {getRoleBadge(member.role, member.leadTitle)}
           <Badge variant="purple">{member.domain}</Badge>
         </div>
       </div>
@@ -74,60 +101,78 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          gap: '10px',
           marginTop: '4px',
-          color: '#9ca3af',
+          color: 'var(--text-muted)',
         }}
       >
         <a
           href={`mailto:${member.email}`}
           title="Send Email"
           style={{
-            padding: '8px',
-            borderRadius: '6px',
-            background: 'rgba(255, 255, 255, 0.04)',
-            color: '#9ca3af',
+            width: '36px',
+            height: '36px',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-elevated)',
+            color: 'var(--text-muted)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            border: '1px solid var(--border-color)',
+            textDecoration: 'none',
+            transition: 'background 0.2s, color 0.2s',
           }}
         >
-          <Mail size={16} />
+          <Icon name="mail" size={16} />
         </a>
-        <a
-          href={member.github || 'https://github.com'}
-          target="_blank"
-          rel="noreferrer"
-          title="GitHub Profile"
-          style={{
-            padding: '8px',
-            borderRadius: '6px',
-            background: 'rgba(255, 255, 255, 0.04)',
-            color: '#9ca3af',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Code2 size={16} />
-        </a>
-        <a
-          href={member.linkedin || 'https://linkedin.com'}
-          target="_blank"
-          rel="noreferrer"
-          title="Portfolio / LinkedIn"
-          style={{
-            padding: '8px',
-            borderRadius: '6px',
-            background: 'rgba(255, 255, 255, 0.04)',
-            color: '#9ca3af',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Globe size={16} />
-        </a>
+
+        {member.github && (
+          <a
+            href={member.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="GitHub Profile"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              textDecoration: 'none',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+          >
+            <Icon name="code" size={16} />
+          </a>
+        )}
+
+        {member.linkedin && (
+          <a
+            href={member.linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="LinkedIn Profile"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border-color)',
+              textDecoration: 'none',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+          >
+            <Icon name="public" size={16} />
+          </a>
+        )}
       </div>
     </Card>
   );

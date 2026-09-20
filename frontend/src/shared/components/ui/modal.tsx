@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Icon } from './icon';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  icon?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -16,7 +17,8 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  maxWidth = '550px',
+  maxWidth = '560px',
+  icon,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,9 +45,10 @@ export const Modal: React.FC<ModalProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(3px)',
         padding: '16px',
+        animation: 'fadeIn 0.15s ease-out',
       }}
       onClick={onClose}
     >
@@ -54,9 +57,9 @@ export const Modal: React.FC<ModalProps> = ({
           width: '100%',
           maxWidth,
           background: 'var(--bg-card)',
-          borderRadius: '0px',
+          borderRadius: 'var(--radius-2xl)',
           border: '1px solid var(--border-color)',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+          boxShadow: 'var(--shadow-xl)',
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -66,27 +69,51 @@ export const Modal: React.FC<ModalProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '16px 20px',
+            padding: '20px 24px',
             borderBottom: '1px solid var(--border-color)',
-            background: 'var(--bg-elevated)',
+            background: 'var(--bg-card)',
           }}
         >
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>{title}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {icon && (
+              <span
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'var(--md-primary-container)',
+                  color: 'var(--md-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name={icon} size={20} />
+              </span>
+            )}
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+              {title}
+            </h3>
+          </div>
           <button
             onClick={onClose}
             style={{
               color: 'var(--text-muted)',
-              padding: '4px',
+              width: '36px',
+              height: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: '0px',
+              borderRadius: 'var(--radius-full)',
+              transition: 'background-color 0.15s ease',
             }}
+            className="m3-interactive"
+            aria-label="Close dialog"
           >
-            <X size={18} />
+            <Icon name="close" size={20} />
           </button>
         </div>
-        <div style={{ padding: '20px' }}>{children}</div>
+        <div style={{ padding: '24px' }}>{children}</div>
       </div>
     </div>
   );

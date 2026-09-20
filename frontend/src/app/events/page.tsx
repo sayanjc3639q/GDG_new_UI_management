@@ -1,33 +1,28 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { DashboardShell } from '@/shared/layout/dashboard-shell';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { Plus, Search, Filter } from 'lucide-react';
-import { GDGEvent, EventsService, EventCard, CreateEventModal, CreateEventDto, EventType } from '@/modules/events';
+import { Icon } from '@/shared/components/ui/icon';
+import { useEvents } from '@/shared/hooks/useEvents';
+import { EventCard, CreateEventModal, CreateEventDto } from '@/modules/events';
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<GDGEvent[]>([]);
-  const [search, setSearch] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('ALL');
+  const {
+    filteredEvents,
+    filter: selectedType,
+    searchQuery,
+    setFilter: setSelectedType,
+    setSearch,
+    createEvent,
+  } = useEvents();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    EventsService.getEvents().then(setEvents);
-  }, []);
-
   const handleCreate = async (dto: CreateEventDto) => {
-    const created = await EventsService.createEvent(dto);
-    setEvents((prev) => [created, ...prev]);
+    await createEvent(dto);
   };
-
-  const filteredEvents = events.filter((e) => {
-    const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.description.toLowerCase().includes(search.toLowerCase());
-    const matchesType = selectedType === 'ALL' || e.type === selectedType;
-    return matchesSearch && matchesType;
-  });
 
   const filterTabs = [
     { label: 'All Events', value: 'ALL' },
@@ -40,25 +35,7 @@ export default function EventsPage() {
   return (
     <DashboardShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff' }}>Events &amp; Workshops</h1>
-            <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '4px' }}>
-              Create, organize, and monitor attendee participation for all GDG campus events.
-            </p>
-          </div>
-
-          <Button
-            variant="primary"
-            leftIcon={<Plus size={18} />}
-            onClick={() => setIsModalOpen(true)}
-          >
-            Create New Event
-          </Button>
-        </div>
-
-        {/* Filters and Search Bar */}
+        {/* Filters and Search Bar with Create Action */}
         <div
           style={{
             display: 'flex',
@@ -66,31 +43,33 @@ export default function EventsPage() {
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '16px',
-            background: 'rgba(19, 27, 44, 0.6)',
+            background: 'var(--bg-card)',
             padding: '12px 16px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
-          {/* Tabs */}
+          {/* Tabs / Filter Chips */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {filterTabs.map((tab) => {
               const isActive = selectedType === tab.value;
               return (
                 <button
                   key={tab.value}
-                  onClick={() => setSelectedType(tab.value)}
+                  onClick={() => setSelectedType(tab.value as any)}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
+                    padding: '6px 16px',
+                    borderRadius: 'var(--radius-full)',
                     fontSize: '0.8125rem',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    background: isActive ? '#4285F4' : 'rgba(255, 255, 255, 0.05)',
-                    color: isActive ? '#ffffff' : '#9ca3af',
-                    border: 'none',
+                    background: isActive ? 'var(--md-primary-container)' : 'var(--bg-elevated)',
+                    color: isActive ? 'var(--md-on-primary-container)' : 'var(--text-muted)',
+                    border: '1px solid var(--border-color)',
                   }}
+                  className="m3-interactive"
                 >
                   {tab.label}
                 </button>
@@ -98,29 +77,41 @@ export default function EventsPage() {
             })}
           </div>
 
-          {/* Search Input */}
-          <div style={{ width: '280px' }}>
-            <Input
-              placeholder="Filter by keyword..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              leftIcon={<Search size={16} />}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* Search Input */}
+            <div style={{ width: '260px' }}>
+              <Input
+                placeholder="Filter by keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearch(e.target.value)}
+                leftIcon={<Icon name="search" size={18} />}
+              />
+            </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Icon name="add" size={16} />}
+              onClick={() => setIsModalOpen(true)}
+            >
+              Create Event
+            </Button>
           </div>
         </div>
+
 
         {/* Events Grid */}
         {filteredEvents.length === 0 ? (
           <div
             style={{
-              padding: '64px',
+              padding: '64px 24px',
               textAlign: 'center',
-              background: 'rgba(19, 27, 44, 0.4)',
-              borderRadius: '16px',
-              border: '1px dashed rgba(255, 255, 255, 0.15)',
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-xl)',
+              border: '1px dashed var(--border-color)',
             }}
           >
-            <p style={{ color: '#9ca3af', fontSize: '1rem' }}>No events found matching your criteria.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No events found matching your criteria.</p>
             <Button
               variant="outline"
               style={{ marginTop: '16px' }}

@@ -1,12 +1,30 @@
-export type MemberRole = 'LEAD' | 'CO_LEAD' | 'ORGANIZER' | 'MEMBER';
-export type MemberDomain = 'AI/ML' | 'Web' | 'Android' | 'Cloud' | 'Cybersecurity' | 'Design';
+export type MemberRole = 'MEMBER' | 'DOMAIN_SENIOR' | 'LEAD';
+
+export type MemberDomain =
+  | 'Graphic Designer'
+  | 'Video Editor'
+  | 'Photographer'
+  | 'Web Developer'
+  | 'Content Writer'
+  | 'Public Relation Manager'
+  | 'App Developer'
+  | 'Technical Member';
+
+export type LeadTitle =
+  | 'Organizer'
+  | 'Co-Organizer'
+  | 'Secretary'
+  | 'Treasurer'
+  | 'Domain Lead';
 
 export interface TeamMember {
   id: string;
+  gdgId?: string;
   name: string;
   email: string;
   role: MemberRole;
   domain: MemberDomain;
+  leadTitle?: LeadTitle;
   avatarUrl?: string;
   github?: string;
   linkedin?: string;
@@ -18,6 +36,19 @@ export interface CreateMemberDto {
   email: string;
   role: MemberRole;
   domain: MemberDomain;
+  gdgId?: string;
+  leadTitle?: LeadTitle;
+  github?: string;
+  linkedin?: string;
+}
+
+export interface UpdateMemberDto {
+  name?: string;
+  email?: string;
+  role?: MemberRole;
+  domain?: MemberDomain;
+  gdgId?: string;
+  leadTitle?: LeadTitle;
   github?: string;
   linkedin?: string;
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'tonal';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
@@ -24,31 +24,35 @@ export const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case 'primary':
         return {
-          background: 'var(--gdg-blue)',
-          color: '#ffffff',
-          border: '1px solid var(--gdg-blue)',
-          fontWeight: 600,
+          background: 'var(--md-primary)',
+          color: 'var(--md-on-primary)',
+          border: '1px solid transparent',
+          boxShadow: 'var(--shadow-sm)',
+        };
+      case 'tonal':
+        return {
+          background: 'var(--md-primary-container)',
+          color: 'var(--md-on-primary-container)',
+          border: '1px solid transparent',
         };
       case 'secondary':
         return {
           background: 'var(--bg-elevated)',
           color: 'var(--text-main)',
           border: '1px solid var(--border-color)',
-          fontWeight: 500,
         };
       case 'outline':
         return {
           background: 'transparent',
-          color: 'var(--text-main)',
+          color: 'var(--md-primary)',
           border: '1px solid var(--border-color)',
-          fontWeight: 500,
         };
       case 'danger':
         return {
-          background: 'var(--gdg-red)',
+          background: 'var(--md-error)',
           color: '#ffffff',
-          border: '1px solid var(--gdg-red)',
-          fontWeight: 600,
+          border: '1px solid transparent',
+          boxShadow: 'var(--shadow-sm)',
         };
       case 'ghost':
         return {
@@ -64,12 +68,12 @@ export const Button: React.FC<ButtonProps> = ({
   const getSizeStyles = (): React.CSSProperties => {
     switch (size) {
       case 'sm':
-        return { padding: '6px 12px', fontSize: '0.8125rem', gap: '6px' };
+        return { padding: '6px 14px', fontSize: '0.8125rem', gap: '6px', height: '32px' };
       case 'lg':
-        return { padding: '12px 24px', fontSize: '1rem', gap: '10px' };
+        return { padding: '12px 24px', fontSize: '1rem', gap: '10px', height: '48px' };
       case 'md':
       default:
-        return { padding: '9px 18px', fontSize: '0.875rem', gap: '8px' };
+        return { padding: '8px 18px', fontSize: '0.875rem', gap: '8px', height: '40px' };
     }
   };
 
@@ -79,25 +83,29 @@ export const Button: React.FC<ButtonProps> = ({
     justifyContent: 'center',
     cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
     opacity: disabled || isLoading ? 0.6 : 1,
-    transition: 'all 0.15s ease',
+    transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
     userSelect: 'none',
-    borderRadius: '0px',
+    borderRadius: 'var(--radius-full)',
+    fontWeight: 500,
+    fontFamily: 'var(--font-main)',
+    letterSpacing: '0.015em',
     ...getSizeStyles(),
     ...getVariantStyles(),
     ...style,
   };
 
   return (
-    <button style={baseStyles} disabled={disabled || isLoading} {...props}>
+    <button style={baseStyles} disabled={disabled || isLoading} className={`m3-interactive ${className}`} {...props}>
       {isLoading ? (
         <span
           style={{
-            width: '14px',
-            height: '14px',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderTopColor: '#ffffff',
+            width: '16px',
+            height: '16px',
+            border: '2px solid currentColor',
+            borderTopColor: 'transparent',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
+            display: 'inline-block',
           }}
         />
       ) : (

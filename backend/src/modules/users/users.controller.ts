@@ -27,12 +27,12 @@ export class UsersController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { name, email, role, domain, avatarUrl } = req.body;
+      const { name, email, role } = req.body;
       if (!name || !email || !role) {
         throw new BadRequestError('Name, email, and role are required');
       }
 
-      const user = await this.usersService.createUser({ name, email, role, domain, avatarUrl });
+      const user = await this.usersService.createUser(req.body);
       ApiResponseUtil.created(res, user, 'User created successfully');
     } catch (error) {
       next(error);

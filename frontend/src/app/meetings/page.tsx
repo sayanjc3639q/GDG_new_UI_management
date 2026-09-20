@@ -2,27 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { DashboardShell } from '@/shared/layout/dashboard-shell';
-import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
 import { Modal } from '@/shared/components/ui/modal';
 import { EmptyState } from '@/shared/components/ui/empty-state';
-import {
-  Video,
-  Plus,
-  Clock,
-  Users,
-  ExternalLink,
-  Copy,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Star,
-  Info,
-  Calendar as CalendarIcon,
-  Filter,
-} from 'lucide-react';
+import { Icon } from '@/shared/components/ui/icon';
+import { useMeetings } from '@/shared/hooks/useMeetings';
 import { MeetingsService, Meeting } from '@/modules/meetings/meetings.service';
 
 interface CustomMeeting extends Meeting {
@@ -30,108 +16,44 @@ interface CustomMeeting extends Meeting {
   starred?: boolean;
 }
 
-const INITIAL_MEETINGS: CustomMeeting[] = [
-  {
-    id: 'm1',
-    title: 'Developers MEET',
-    agenda: 'Monthly sync with all chapter developers to review Q3 sprint progress and tech stack upgrades.',
-    date: '2026-08-23',
-    time: '18:30 – 19:30',
-    meetLink: 'https://meet.google.com/gdg-devs-sync',
-    attendeesCount: 15,
-    host: 'Sayan Maity',
-    status: 'LIVE_NOW',
-    category: 'Core Team & Chapter Leads',
-    starred: true,
-  },
-  {
-    id: 'm2',
-    title: 'Web & Cloud Architecture Review',
-    agenda: 'Discussing Next.js 15 migration, microservices architecture, and cloud deployment pipelines.',
-    date: '2026-08-23',
-    time: '16:00 – 17:00',
-    meetLink: 'https://meet.google.com/gdg-hit-web',
-    attendeesCount: 12,
-    host: 'Arindam Roy',
-    status: 'UPCOMING',
-    category: 'Web & Cloud Track',
-    starred: false,
-  },
-  {
-    id: 'm3',
-    title: 'AI & Machine Learning Standup',
-    agenda: 'Weekly sync on LLM fine-tuning, RAG pipeline evaluation, and dataset prep.',
-    date: '2026-08-24',
-    time: '14:00 – 15:00',
-    meetLink: 'https://meet.google.com/gdg-aiml-sync',
-    attendeesCount: 18,
-    host: 'Priya Sharma',
-    status: 'UPCOMING',
-    category: 'AI & ML Track',
-    starred: true,
-  },
-  {
-    id: 'm4',
-    title: 'Design System Retrospective',
-    agenda: 'Reviewing component library tokens, color palettes, and mobile responsiveness guidelines.',
-    date: '2026-08-22',
-    time: '11:00 – 12:00',
-    meetLink: 'https://meet.google.com/gdg-design-retro',
-    attendeesCount: 9,
-    host: 'Rohit Sengupta',
-    status: 'CONCLUDED',
-    category: 'Design & Open Source',
-    starred: false,
-  },
-];
-
 export default function MeetingsPage() {
-  const [meetings, setMeetings] = useState<CustomMeeting[]>(INITIAL_MEETINGS);
+  const { meetings: storeMeetings, createMeeting: createMeetingAction } = useMeetings();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<CustomMeeting | null>(null);
   const [filterTab, setFilterTab] = useState<'ALL' | 'UPCOMING' | 'LIVE_NOW' | 'CONCLUDED'>('ALL');
-  const [selectedDate, setSelectedDate] = useState<string>('2026-08-23');
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   // Small Calendar Month State
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(7); // August (0-indexed: 7)
+  const now = new Date();
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth());
 
   // Form State
   const [title, setTitle] = useState('');
   const [agenda, setAgenda] = useState('');
-  const [date, setDate] = useState('2026-08-23');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('18:00 – 19:00');
-  const [meetLink, setMeetLink] = useState('https://meet.google.com/gdg-new-sync');
+  const [meetLink, setMeetLink] = useState('https://meet.google.com/new');
   const [host, setHost] = useState('Chapter Lead');
   const [category, setCategory] = useState('Core Team & Chapter Leads');
 
-  useEffect(() => {
-    loadMeetings();
-  }, []);
-
-  const loadMeetings = async () => {
-    try {
-      const data = await MeetingsService.getMeetings();
-      if (data && data.length > 0) {
-        setMeetings(
-          data.map((m) => ({
-            ...m,
-            category: 'Core Team & Chapter Leads',
-            starred: false,
-          }))
-        );
-      }
-    } catch {
-      // Fallback to initial meetings
-    }
-  };
+  const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
 
   const toggleStar = (id: string) => {
-    setMeetings((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, starred: !m.starred } : m))
-    );
+    setStarredIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
+
+  const meetings: CustomMeeting[] = storeMeetings.map((m) => ({
+    ...m,
+    category: (m as any).category || 'Core Team & Chapter Leads',
+    starred: starredIds.has(m.id),
+  }));
 
   const handleCopy = (id: string, link: string) => {
     navigator.clipboard.writeText(link);
@@ -143,22 +65,8 @@ export default function MeetingsPage() {
     e.preventDefault();
     if (!title) return;
 
-    const newMeeting: CustomMeeting = {
-      id: `m-${Date.now()}`,
-      title,
-      agenda: agenda || 'General team sync and discussion.',
-      date,
-      time,
-      meetLink: meetLink || 'https://meet.google.com/new',
-      host: host || 'Chapter Member',
-      status: 'UPCOMING',
-      attendeesCount: 10,
-      category,
-      starred: false,
-    };
-
     try {
-      await MeetingsService.createMeeting({
+      await createMeetingAction({
         title,
         agenda,
         date,
@@ -166,23 +74,22 @@ export default function MeetingsPage() {
         meetLink,
         host,
       });
-    } catch {
-      // Local fallback
-    }
 
-    setMeetings([newMeeting, ...meetings]);
-    setTitle('');
-    setAgenda('');
-    setIsScheduleOpen(false);
+      setTitle('');
+      setAgenda('');
+      setIsScheduleOpen(false);
+    } catch (err) {
+      console.error('Failed to create meeting:', err);
+    }
   };
 
-  // Calendar Helpers
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -217,74 +124,23 @@ export default function MeetingsPage() {
 
   return (
     <DashboardShell>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Top Header Row */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Filter Chips Bar with Create Meeting Action */}
         <div
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '16px',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.02)',
-          }}
-        >
-          <div>
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: 'var(--gdg-blue)',
-                background: 'rgba(66, 133, 244, 0.1)',
-                padding: '3px 10px',
-                borderRadius: '20px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                marginBottom: '4px',
-                display: 'inline-block',
-              }}
-            >
-              Operations &amp; Syncs
-            </span>
-            <h1 style={{ fontSize: '1.625rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
-              MEETINGS
-            </h1>
-          </div>
-
-          <Button
-            variant="primary"
-            leftIcon={<Plus size={16} />}
-            onClick={() => setIsScheduleOpen(true)}
-            style={{ borderRadius: '10px', padding: '9px 18px', fontWeight: 700 }}
-          >
-            Create Meeting
-          </Button>
-        </div>
-
-        {/* Top Horizontal Filter Tabs Row (All Meetings, Upcoming, Ongoing, Completed) */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '14px',
-            padding: '10px 16px',
+            borderRadius: 'var(--radius-xl)',
+            padding: '12px 18px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '12px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '6px' }}>
-              Filter:
-            </span>
-
             {[
               { id: 'ALL', label: 'All Meetings', count: meetings.length, color: 'var(--gdg-blue)' },
               { id: 'UPCOMING', label: 'Upcoming', count: meetings.filter((m) => m.status === 'UPCOMING').length, color: '#1a73e8' },
@@ -300,21 +156,22 @@ export default function MeetingsPage() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    background: isActive ? 'var(--bg-elevated)' : 'transparent',
-                    border: isActive ? '1px solid var(--border-color)' : '1px solid transparent',
-                    color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
-                    fontWeight: isActive ? 700 : 500,
+                    padding: '6px 16px',
+                    borderRadius: 'var(--radius-full)',
+                    background: isActive ? 'var(--md-primary-container)' : 'var(--bg-elevated)',
+                    border: '1px solid var(--border-color)',
+                    color: isActive ? 'var(--md-on-primary-container)' : 'var(--text-muted)',
+                    fontWeight: 500,
                     fontSize: '0.8125rem',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.2s ease',
                   }}
+                  className="m3-interactive"
                 >
                   <span
                     style={{
-                      width: '7px',
-                      height: '7px',
+                      width: '8px',
+                      height: '8px',
                       borderRadius: '50%',
                       background: tab.color,
                     }}
@@ -328,137 +185,47 @@ export default function MeetingsPage() {
             })}
           </div>
 
-          {selectedDate && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                📅 Date: {selectedDate}
-              </span>
-              <button
-                onClick={() => setSelectedDate('')}
-                style={{ fontSize: '0.75rem', color: 'var(--gdg-blue)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-              >
-                Clear Date
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Main Split Grid: Left Small Calendar + Right Compact Meeting Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'start' }}>
-          
-          {/* Left Side: Small Interactive Calendar (Compact & Rounded) */}
-          <div
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '16px',
-              padding: '16px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-              maxWidth: '330px',
-              width: '100%',
-              justifySelf: 'start',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-main)' }}>
-                {monthNames[currentMonth]} {currentYear}
-              </span>
-              <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {selectedDate && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  📅 Date: {selectedDate}
+                </span>
                 <button
-                  onClick={handlePrevMonth}
+                  onClick={() => setSelectedDate('')}
                   style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '3px 6px',
+                    fontSize: '0.8125rem',
+                    color: 'var(--md-primary)',
+                    background: 'none',
+                    border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--text-main)',
-                    display: 'flex',
+                    fontWeight: 600,
                   }}
                 >
-                  <ChevronLeft size={14} />
-                </button>
-                <button
-                  onClick={handleNextMonth}
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '3px 6px',
-                    cursor: 'pointer',
-                    color: 'var(--text-main)',
-                    display: 'flex',
-                  }}
-                >
-                  <ChevronRight size={14} />
+                  Clear Date
                 </button>
               </div>
-            </div>
+            )}
 
-            {/* Days Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', marginBottom: '6px' }}>
-              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-                <span key={d} style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                  {d}
-                </span>
-              ))}
-            </div>
-
-            {/* Days Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', textAlign: 'center' }}>
-              {Array.from({ length: firstDayIndex }).map((_, i) => (
-                <div key={`empty-${i}`} />
-              ))}
-
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const dayNum = i + 1;
-                const dateStr = formatDayString(dayNum);
-                const isSelected = selectedDate === dateStr;
-                const hasMeeting = meetings.some((m) => m.date === dateStr);
-
-                return (
-                  <button
-                    key={dayNum}
-                    onClick={() => setSelectedDate(isSelected ? '' : dateStr)}
-                    style={{
-                      padding: '6px 0',
-                      fontSize: '0.75rem',
-                      fontWeight: isSelected ? 800 : 500,
-                      color: isSelected ? '#ffffff' : 'var(--text-main)',
-                      background: isSelected ? 'var(--gdg-blue)' : 'transparent',
-                      borderRadius: '6px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {dayNum}
-                    {hasMeeting && !isSelected && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          bottom: '2px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          width: '4px',
-                          height: '4px',
-                          borderRadius: '50%',
-                          background: 'var(--gdg-blue)',
-                        }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Icon name="video_call" size={16} />}
+              onClick={() => setIsScheduleOpen(true)}
+            >
+              Create Meeting
+            </Button>
           </div>
+        </div>
 
-          {/* Right Side: Compact Responsive Meeting Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, width: '100%' }}>
+
+        {/* Main Layout: Left Meeting Cards List + Right Sticky Calendar (Hidden on Mobile) */}
+        <div className="meetings-layout-container">
+          {/* Left Side: Meeting Cards */}
+          <div className="meetings-list-container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                SCHEDULED MEETINGS ({filteredMeetings.length})
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                Scheduled Syncs ({filteredMeetings.length})
               </span>
             </div>
 
@@ -468,90 +235,56 @@ export default function MeetingsPage() {
                 description="There are no scheduled meetings matching your selected date or filter."
                 actionLabel="Create Meeting"
                 onAction={() => setIsScheduleOpen(true)}
-                icon={<Video size={20} />}
+                icon="videocam"
               />
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '14px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '16px',
+                }}
+              >
                 {filteredMeetings.map((m) => (
                   <div
                     key={m.id}
                     style={{
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border-color)',
-                      borderRadius: '14px',
-                      padding: '14px 16px',
-                      boxShadow: '0 3px 10px rgba(0, 0, 0, 0.02)',
+                      borderRadius: 'var(--radius-lg)',
+                      padding: '18px 20px',
+                      boxShadow: 'var(--shadow-sm)',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      gap: '10px',
+                      gap: '12px',
                     }}
+                    className="m3-interactive"
                   >
-                    {/* Top Row: Status Pill, Time Interval & Star Button */}
+                    {/* Top Row: Status Pill, Time & Star */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         {m.status === 'LIVE_NOW' && (
-                          <span
-                            style={{
-                              background: 'rgba(52, 168, 83, 0.12)',
-                              color: '#2b8a3e',
-                              border: '1px solid rgba(52, 168, 83, 0.3)',
-                              padding: '2px 8px',
-                              borderRadius: '16px',
-                              fontSize: '0.6875rem',
-                              fontWeight: 700,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34A853' }} />
-                            Live Now
-                          </span>
+                          <Badge variant="green">Live Now</Badge>
                         )}
-
                         {m.status === 'UPCOMING' && (
-                          <span
-                            style={{
-                              background: 'rgba(66, 133, 244, 0.12)',
-                              color: '#1a73e8',
-                              border: '1px solid rgba(66, 133, 244, 0.3)',
-                              padding: '2px 8px',
-                              borderRadius: '16px',
-                              fontSize: '0.6875rem',
-                              fontWeight: 700,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4285F4' }} />
-                            Upcoming
-                          </span>
+                          <Badge variant="blue">Upcoming</Badge>
                         )}
-
                         {m.status === 'CONCLUDED' && (
-                          <span
-                            style={{
-                              background: 'var(--bg-elevated)',
-                              color: 'var(--text-muted)',
-                              border: '1px solid var(--border-color)',
-                              padding: '2px 8px',
-                              borderRadius: '16px',
-                              fontSize: '0.6875rem',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--text-muted)' }} />
-                            Completed
-                          </span>
+                          <Badge variant="gray">Completed</Badge>
                         )}
 
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                          <Clock size={12} />
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-muted)',
+                            fontWeight: 500,
+                          }}
+                        >
+                          <Icon name="schedule" size={14} />
                           {m.time}
                         </span>
                       </div>
@@ -563,49 +296,66 @@ export default function MeetingsPage() {
                           border: 'none',
                           cursor: 'pointer',
                           color: m.starred ? 'var(--gdg-yellow)' : 'var(--text-subtle)',
+                          display: 'flex',
+                          alignItems: 'center',
                           padding: '2px',
                         }}
+                        aria-label="Star meeting"
                       >
-                        <Star size={16} fill={m.starred ? 'var(--gdg-yellow)' : 'none'} />
+                        <Icon
+                          name={m.starred ? 'star' : 'star_outline'}
+                          size={18}
+                          fill={m.starred}
+                          color={m.starred ? 'var(--gdg-yellow)' : 'var(--text-subtle)'}
+                        />
                       </button>
                     </div>
 
                     {/* Category Tag */}
                     {m.category && (
                       <div>
-                        <span
-                          style={{
-                            background: 'rgba(168, 85, 247, 0.08)',
-                            color: '#9333ea',
-                            fontSize: '0.6875rem',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: '12px',
-                            display: 'inline-block',
-                          }}
-                        >
+                        <Badge variant="purple" size="sm">
                           {m.category}
-                        </span>
+                        </Badge>
                       </div>
                     )}
 
                     {/* Meeting Title & Description */}
                     <div>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em', marginBottom: '4px' }}>
+                      <h3
+                        style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 600,
+                          color: 'var(--text-main)',
+                          letterSpacing: '-0.01em',
+                          marginBottom: '4px',
+                        }}
+                      >
                         {m.title}
                       </h3>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <p
+                        style={{
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-muted)',
+                          lineHeight: 1.4,
+                          margin: 0,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
                         {m.agenda}
                       </p>
                     </div>
 
-                    {/* Compact Google Meet Link Box */}
+                    {/* Google Meet Link Container */}
                     <div
                       style={{
-                        background: 'rgba(66, 133, 244, 0.08)',
-                        border: '1px solid rgba(66, 133, 244, 0.2)',
-                        borderRadius: '10px',
-                        padding: '6px 10px',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '8px 12px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -613,13 +363,13 @@ export default function MeetingsPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                        <Video size={14} color="var(--gdg-blue)" style={{ flexShrink: 0 }} />
+                        <Icon name="videocam" size={16} color="var(--md-primary)" />
                         <span
                           style={{
                             fontSize: '0.75rem',
-                            color: 'var(--gdg-blue)',
-                            fontWeight: 600,
-                            fontFamily: 'monospace',
+                            color: 'var(--md-primary)',
+                            fontWeight: 500,
+                            fontFamily: 'var(--font-mono)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -636,18 +386,18 @@ export default function MeetingsPage() {
                           background: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
-                          color: 'var(--gdg-blue)',
+                          color: 'var(--md-primary)',
                           display: 'flex',
                           alignItems: 'center',
                           padding: '2px',
                           flexShrink: 0,
                         }}
                       >
-                        {copiedId === m.id ? <Check size={14} color="var(--gdg-green)" /> : <Copy size={14} />}
+                        <Icon name={copiedId === m.id ? 'check' : 'content_copy'} size={16} />
                       </button>
                     </div>
 
-                    {/* Bottom Action Buttons: Details & Join */}
+                    {/* Bottom Action Buttons */}
                     <div
                       style={{
                         borderTop: '1px solid var(--border-color)',
@@ -660,9 +410,8 @@ export default function MeetingsPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        leftIcon={<Info size={13} />}
+                        leftIcon={<Icon name="info" size={16} />}
                         onClick={() => setSelectedMeeting(m)}
-                        style={{ borderRadius: '8px', fontWeight: 600, padding: '5px 12px', fontSize: '0.75rem' }}
                       >
                         Details
                       </Button>
@@ -671,8 +420,7 @@ export default function MeetingsPage() {
                         <Button
                           variant="primary"
                           size="sm"
-                          leftIcon={<Video size={13} />}
-                          style={{ borderRadius: '8px', fontWeight: 700, padding: '5px 14px', fontSize: '0.75rem' }}
+                          leftIcon={<Icon name="videocam" size={16} />}
                         >
                           Join
                         </Button>
@@ -683,11 +431,149 @@ export default function MeetingsPage() {
               </div>
             )}
           </div>
+
+          {/* Right Side: Sticky Fixed Calendar Sidebar (Hidden on Mobile) */}
+          <div className="meetings-calendar-sidebar">
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '20px',
+                boxShadow: 'var(--shadow-sm)',
+                width: '100%',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '14px',
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-main)' }}>
+                  {monthNames[currentMonth]} {currentYear}
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    onClick={handlePrevMonth}
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-full)',
+                      width: '30px',
+                      height: '30px',
+                      cursor: 'pointer',
+                      color: 'var(--text-main)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    className="m3-interactive"
+                    aria-label="Previous month"
+                  >
+                    <Icon name="chevron_left" size={16} />
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-full)',
+                      width: '30px',
+                      height: '30px',
+                      cursor: 'pointer',
+                      color: 'var(--text-main)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    className="m3-interactive"
+                    aria-label="Next month"
+                  >
+                    <Icon name="chevron_right" size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Days Header */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  textAlign: 'center',
+                  marginBottom: '6px',
+                }}
+              >
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                  <span key={d} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              {/* Days Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
+                {Array.from({ length: firstDayIndex }).map((_, i) => (
+                  <div key={`empty-${i}`} />
+                ))}
+
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const dayNum = i + 1;
+                  const dateStr = formatDayString(dayNum);
+                  const isSelected = selectedDate === dateStr;
+                  const hasMeeting = meetings.some((m) => m.date === dateStr);
+
+                  return (
+                    <button
+                      key={dayNum}
+                      onClick={() => setSelectedDate(isSelected ? '' : dateStr)}
+                      style={{
+                        padding: '8px 0',
+                        fontSize: '0.8125rem',
+                        fontWeight: isSelected ? 600 : 400,
+                        color: isSelected ? 'var(--md-on-primary)' : 'var(--text-main)',
+                        background: isSelected ? 'var(--md-primary)' : 'transparent',
+                        borderRadius: 'var(--radius-full)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        transition: 'all 0.15s ease',
+                      }}
+                      className={!isSelected ? 'm3-interactive' : ''}
+                    >
+                      {dayNum}
+                      {hasMeeting && !isSelected && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: '3px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '4px',
+                            height: '4px',
+                            borderRadius: '50%',
+                            background: 'var(--md-primary)',
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Schedule Meeting Modal */}
-        <Modal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} title="Create New Meeting">
-          <form onSubmit={handleCreateMeeting} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <Modal
+          isOpen={isScheduleOpen}
+          onClose={() => setIsScheduleOpen(false)}
+          title="Create New Meeting"
+          icon="video_call"
+        >
+          <form onSubmit={handleCreateMeeting} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <Input
               label="Meeting Title"
               placeholder="e.g. Developers MEET"
@@ -696,29 +582,15 @@ export default function MeetingsPage() {
               required
             />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                Track / Category Tag
-              </label>
-              <input
-                placeholder="e.g. Core Team & Chapter Leads"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'var(--bg-input)',
-                  border: '1px solid var(--border-color)',
-                  padding: '9px 12px',
-                  color: 'var(--text-main)',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                  borderRadius: '8px',
-                }}
-              />
-            </div>
+            <Input
+              label="Track / Category Tag"
+              placeholder="e.g. Core Team & Chapter Leads"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
                 Description / Agenda
               </label>
               <textarea
@@ -730,11 +602,13 @@ export default function MeetingsPage() {
                   width: '100%',
                   background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  padding: '9px 12px',
+                  padding: '10px 14px',
                   color: 'var(--text-main)',
                   fontSize: '0.875rem',
+                  fontFamily: 'var(--font-main)',
                   outline: 'none',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-sm)',
+                  resize: 'vertical',
                 }}
               />
             </div>
@@ -771,11 +645,11 @@ export default function MeetingsPage() {
               required
             />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
-              <Button type="button" variant="secondary" onClick={() => setIsScheduleOpen(false)} style={{ borderRadius: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+              <Button type="button" variant="secondary" onClick={() => setIsScheduleOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" style={{ borderRadius: '10px' }}>
+              <Button type="submit" variant="primary">
                 Create Meeting
               </Button>
             </div>
@@ -784,25 +658,21 @@ export default function MeetingsPage() {
 
         {/* Meeting Details Modal */}
         {selectedMeeting && (
-          <Modal isOpen={!!selectedMeeting} onClose={() => setSelectedMeeting(null)} title={selectedMeeting.title}>
+          <Modal
+            isOpen={!!selectedMeeting}
+            onClose={() => setSelectedMeeting(null)}
+            title={selectedMeeting.title}
+            icon="event_note"
+          >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <span
-                  style={{
-                    background: 'rgba(168, 85, 247, 0.1)',
-                    color: '#9333ea',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    padding: '3px 10px',
-                    borderRadius: '16px',
-                  }}
-                >
+                <Badge variant="purple">
                   {selectedMeeting.category || 'General Sync'}
-                </span>
+                </Badge>
               </div>
 
               <div>
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
                   Agenda &amp; Discussion
                 </h4>
                 <p style={{ fontSize: '0.9375rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
@@ -810,10 +680,20 @@ export default function MeetingsPage() {
                 </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--bg-elevated)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '12px',
+                  background: 'var(--bg-elevated)',
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Date &amp; Time</span>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-main)', marginTop: '2px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)', marginTop: '2px' }}>
                     📅 {selectedMeeting.date}
                   </div>
                   <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
@@ -823,7 +703,7 @@ export default function MeetingsPage() {
 
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Host &amp; Attendance</span>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-main)', marginTop: '2px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)', marginTop: '2px' }}>
                     👤 {selectedMeeting.host}
                   </div>
                   <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
@@ -832,12 +712,12 @@ export default function MeetingsPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
-                <Button variant="secondary" onClick={() => setSelectedMeeting(null)} style={{ borderRadius: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                <Button variant="secondary" onClick={() => setSelectedMeeting(null)}>
                   Close
                 </Button>
                 <a href={selectedMeeting.meetLink} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                  <Button variant="primary" leftIcon={<Video size={16} />} style={{ borderRadius: '10px' }}>
+                  <Button variant="primary" leftIcon={<Icon name="videocam" size={18} />}>
                     Join Google Meet
                   </Button>
                 </a>
