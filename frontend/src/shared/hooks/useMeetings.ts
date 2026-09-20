@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchMeetings,
   createMeetingThunk,
+  deleteMeetingThunk,
   setMeetingFilter,
   setMeetingSearch,
 } from '@/store/slices/meetingsSlice';
@@ -39,6 +40,13 @@ export function useMeetings(autoFetch = true) {
     [dispatch]
   );
 
+  const handleDeleteMeeting = useCallback(
+    async (id: string) => {
+      return await dispatch(deleteMeetingThunk(id)).unwrap();
+    },
+    [dispatch]
+  );
+
   const handleSetFilter = useCallback(
     (newFilter: typeof filter) => {
       dispatch(setMeetingFilter(newFilter));
@@ -66,6 +74,7 @@ export function useMeetings(autoFetch = true) {
     filter,
     searchQuery,
     createMeeting: handleCreateMeeting,
+    deleteMeeting: handleDeleteMeeting,
     setFilter: handleSetFilter,
     setSearch: handleSetSearch,
     refreshMeetings,

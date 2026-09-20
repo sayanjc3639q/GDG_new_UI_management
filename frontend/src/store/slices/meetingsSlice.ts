@@ -43,6 +43,14 @@ export const createMeetingThunk = createAsyncThunk<Meeting, CreateMeetingDto>(
   }
 );
 
+export const deleteMeetingThunk = createAsyncThunk<string, string>(
+  'meetings/deleteMeeting',
+  async (id) => {
+    await MeetingsService.deleteMeeting(id);
+    return id;
+  }
+);
+
 export const meetingsSlice = createSlice({
   name: 'meetings',
   initialState,
@@ -71,6 +79,9 @@ export const meetingsSlice = createSlice({
       })
       .addCase(createMeetingThunk.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
+      })
+      .addCase(deleteMeetingThunk.fulfilled, (state, action) => {
+        state.items = state.items.filter((m) => m.id !== action.payload && (m as any)._id !== action.payload);
       });
   },
 });

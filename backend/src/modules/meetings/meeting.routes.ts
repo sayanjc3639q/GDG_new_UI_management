@@ -9,8 +9,11 @@ export function createMeetingsRouter(): Router {
   const controller = new MeetingController(service);
 
   router.get('/', controller.getAll);
+  router.get('/:id', controller.getById);
   router.post('/', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.create);
   router.delete('/:id', authenticate, requireRoles('LEAD', 'DOMAIN_SENIOR'), controller.delete);
+  router.patch('/:id/attendance', authenticate, controller.updateAttendance);
+  router.patch('/:id/mom', authenticate, controller.updateMoM);
 
   return router;
 }

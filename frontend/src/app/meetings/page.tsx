@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { DashboardShell } from '@/shared/layout/dashboard-shell';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -9,24 +10,22 @@ import { Modal } from '@/shared/components/ui/modal';
 import { EmptyState } from '@/shared/components/ui/empty-state';
 import { Icon } from '@/shared/components/ui/icon';
 import { useMeetings } from '@/shared/hooks/useMeetings';
+import { useTeam } from '@/shared/hooks/useTeam';
 import { useAuth } from '@/shared/context/auth-context';
-import { MeetingsService, Meeting } from '@/modules/meetings/meetings.service';
-
-interface CustomMeeting extends Meeting {
-  category?: string;
-  starred?: boolean;
-}
+import { Meeting } from '@/modules/meetings/meetings.service';
 
 export default function MeetingsPage() {
   const { user } = useAuth();
   const canManageMeetings = Boolean(
     user && (user.role === 'DEVELOPER' || user.role === 'LEAD' || user.role === 'DOMAIN_SENIOR')
   );
-  const { meetings: storeMeetings, createMeeting: createMeetingAction } = useMeetings();
+
+  const { meetings, createMeeting: createMeetingAction } = useMeetings();
+  const { members } = useTeam();
+
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
-  const [selectedMeeting, setSelectedMeeting] = useState<CustomMeeting | null>(null);
-  const [filterTab, setFilterTab] = useState<'ALL' | 'UPCOMING' | 'LIVE_NOW' | 'CONCLUDED'>('ALL');
+  const [filterTab, setFilterTab] = useState<'ACTIVE' | 'CONCLUDED' | 'ALL'>('ACTIVE');
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   // Small Calendar Month State
@@ -39,26 +38,12 @@ export default function MeetingsPage() {
   const [agenda, setAgenda] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('18:00 – 19:00');
+  const [meetingMode, setMeetingMode] = useState<'ONLINE' | 'OFFLINE'>('ONLINE');
   const [meetLink, setMeetLink] = useState('https://meet.google.com/new');
-  const [host, setHost] = useState('Chapter Lead');
-  const [category, setCategory] = useState('Core Team & Chapter Leads');
-
-  const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
-
-  const toggleStar = (id: string) => {
-    setStarredIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const meetings: CustomMeeting[] = storeMeetings.map((m) => ({
-    ...m,
-    category: (m as any).category || 'Core Team & Chapter Leads',
-    starred: starredIds.has(m.id),
-  }));
+  const [location, setLocation] = useState('Campus Room 302');
+  const [host, setHost] = useState(user?.name || 'Chapter Lead');
+  const [selectedInChargeId, setSelectedInChargeId] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCopy = (id: string, link: string) => {
     navigator.clipboard.writeText(link);
@@ -68,23 +53,43 @@ export default function MeetingsPage() {
 
   const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title) return;
+    if (!title || !date || !time) return;
 
+    setIsSubmitting(true);
     try {
+      let assignedInCharge: { id: string; name: string; email?: string } | undefined;
+      if (selectedInChargeId) {
+        const found = members.find((m) => m.id === selectedInChargeId);
+        if (found) {
+          assignedInCharge = {
+            id: found.id,
+            name: `${found.name} (${found.leadTitle || found.role})`,
+            email: found.email,
+          };
+        }
+      }
+
       await createMeetingAction({
         title,
         agenda,
         date,
         time,
-        meetLink,
+        mode: meetingMode,
+        meetLink: meetingMode === 'ONLINE' ? meetLink : undefined,
+        location: meetingMode === 'OFFLINE' ? location : undefined,
         host,
+        assignedInCharge,
       });
 
       setTitle('');
       setAgenda('');
+      setSelectedInChargeId('');
       setIsScheduleOpen(false);
     } catch (err) {
       console.error('Failed to create meeting:', err);
+      alert('Failed to create meeting.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -120,12 +125,41 @@ export default function MeetingsPage() {
     return `${currentYear}-${mStr}-${dStr}`;
   };
 
-  // Filter Logic
-  const filteredMeetings = meetings.filter((m) => {
-    if (filterTab !== 'ALL' && m.status !== filterTab) return false;
-    if (selectedDate && m.date !== selectedDate) return false;
-    return true;
-  });
+  // Helper to check if a meeting has concluded
+  const isMeetingConcluded = (m: Meeting) => {
+    if (m.status === 'CONCLUDED') return true;
+    try {
+      const timePart = (m.time || '18:00').split(' ')[0];
+      const meetingDateTime = new Date(`${m.date} ${timePart}`);
+      if (!isNaN(meetingDateTime.getTime())) {
+        const twoHoursMs = 2 * 60 * 60 * 1000;
+        return Date.now() > meetingDateTime.getTime() + twoHoursMs;
+      }
+    } catch {}
+    return false;
+  };
+
+  // Filter Logic: Auto-remove / filter out concluded meetings in active view
+  const activeMeetings = useMemo(() => {
+    return meetings.filter((m) => !isMeetingConcluded(m));
+  }, [meetings]);
+
+  const pastMeetings = useMemo(() => {
+    return meetings.filter((m) => isMeetingConcluded(m));
+  }, [meetings]);
+
+  const filteredMeetings = useMemo(() => {
+    let list: Meeting[] = [];
+    if (filterTab === 'ACTIVE') list = activeMeetings;
+    else if (filterTab === 'CONCLUDED') list = pastMeetings;
+    else list = meetings;
+
+    if (selectedDate) {
+      list = list.filter((m) => m.date === selectedDate);
+    }
+
+    return list;
+  }, [filterTab, activeMeetings, pastMeetings, meetings, selectedDate]);
 
   return (
     <DashboardShell>
@@ -136,7 +170,7 @@ export default function MeetingsPage() {
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
             borderRadius: 'var(--radius-xl)',
-            padding: '12px 18px',
+            padding: '14px 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -147,10 +181,9 @@ export default function MeetingsPage() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {[
-              { id: 'ALL', label: 'All Meetings', count: meetings.length, color: 'var(--gdg-blue)' },
-              { id: 'UPCOMING', label: 'Upcoming', count: meetings.filter((m) => m.status === 'UPCOMING').length, color: '#1a73e8' },
-              { id: 'LIVE_NOW', label: 'Ongoing / Live', count: meetings.filter((m) => m.status === 'LIVE_NOW').length, color: 'var(--gdg-green)' },
-              { id: 'CONCLUDED', label: 'Completed', count: meetings.filter((m) => m.status === 'CONCLUDED').length, color: 'var(--text-muted)' },
+              { id: 'ACTIVE', label: 'Active & Upcoming', count: activeMeetings.length, color: 'var(--gdg-blue)' },
+              { id: 'CONCLUDED', label: 'Concluded / Past', count: pastMeetings.length, color: 'var(--text-muted)' },
+              { id: 'ALL', label: 'All Sessions', count: meetings.length, color: 'var(--gdg-green)' },
             ].map((tab) => {
               const isActive = filterTab === tab.id;
               return (
@@ -166,7 +199,7 @@ export default function MeetingsPage() {
                     background: isActive ? 'var(--md-primary-container)' : 'var(--bg-elevated)',
                     border: '1px solid var(--border-color)',
                     color: isActive ? 'var(--md-on-primary-container)' : 'var(--text-muted)',
-                    fontWeight: 500,
+                    fontWeight: 600,
                     fontSize: '0.8125rem',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
@@ -216,7 +249,7 @@ export default function MeetingsPage() {
               <Button
                 variant="primary"
                 size="sm"
-                leftIcon={<Icon name="video_call" size={16} />}
+                leftIcon={<Icon name="video_call" size={18} />}
                 onClick={() => setIsScheduleOpen(true)}
               >
                 Create Meeting
@@ -225,14 +258,13 @@ export default function MeetingsPage() {
           </div>
         </div>
 
-
-        {/* Main Layout: Left Meeting Cards List + Right Sticky Calendar (Hidden on Mobile) */}
+        {/* Main Layout: Left Meeting Cards List + Right Calendar Widget */}
         <div className="meetings-layout-container">
           {/* Left Side: Meeting Cards */}
           <div className="meetings-list-container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                Scheduled Syncs ({filteredMeetings.length})
+                {filterTab === 'ACTIVE' ? 'Upcoming & Live Meetings' : filterTab === 'CONCLUDED' ? 'Past Meetings' : 'All Meetings'} ({filteredMeetings.length})
               </span>
             </div>
 
@@ -241,8 +273,8 @@ export default function MeetingsPage() {
                 title="No Meetings Found"
                 description={
                   canManageMeetings
-                    ? 'There are no scheduled meetings matching your selected date or filter.'
-                    : 'There are currently no scheduled meetings.'
+                    ? 'No scheduled meetings matching this filter. Schedule a new online sync or offline meeting.'
+                    : 'There are currently no active meetings.'
                 }
                 actionLabel={canManageMeetings ? 'Create Meeting' : undefined}
                 onAction={canManageMeetings ? () => setIsScheduleOpen(true) : undefined}
@@ -252,38 +284,39 @@ export default function MeetingsPage() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
                   gap: '16px',
                 }}
               >
-                {filteredMeetings.map((m) => (
-                  <div
-                    key={m.id}
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '18px 20px',
-                      boxShadow: 'var(--shadow-sm)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                    }}
-                    className="m3-interactive"
-                  >
-                    {/* Top Row: Status Pill, Time & Star */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        {m.status === 'LIVE_NOW' && (
-                          <Badge variant="green">Live Now</Badge>
-                        )}
-                        {m.status === 'UPCOMING' && (
-                          <Badge variant="blue">Upcoming</Badge>
-                        )}
-                        {m.status === 'CONCLUDED' && (
-                          <Badge variant="gray">Completed</Badge>
-                        )}
+                {filteredMeetings.map((m) => {
+                  const isConcluded = isMeetingConcluded(m);
+
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-xl)',
+                        padding: '20px',
+                        boxShadow: 'var(--shadow-sm)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '14px',
+                        opacity: isConcluded ? 0.75 : 1,
+                      }}
+                      className="m3-interactive"
+                    >
+                      {/* Top Row: Mode Badge & Time */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Badge variant={m.mode === 'ONLINE' ? 'blue' : 'green'}>
+                            {m.mode === 'ONLINE' ? 'Online' : 'Offline'}
+                          </Badge>
+                          {m.status === 'LIVE_NOW' && <Badge variant="green">Live Now</Badge>}
+                          {isConcluded && <Badge variant="gray">Concluded</Badge>}
+                        </div>
 
                         <span
                           style={{
@@ -292,7 +325,7 @@ export default function MeetingsPage() {
                             gap: '4px',
                             fontSize: '0.75rem',
                             color: 'var(--text-muted)',
-                            fontWeight: 500,
+                            fontWeight: 600,
                           }}
                         >
                           <Icon name="schedule" size={14} />
@@ -300,150 +333,159 @@ export default function MeetingsPage() {
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => toggleStar(m.id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: m.starred ? 'var(--gdg-yellow)' : 'var(--text-subtle)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '2px',
-                        }}
-                        aria-label="Star meeting"
-                      >
-                        <Icon
-                          name={m.starred ? 'star' : 'star_outline'}
-                          size={18}
-                          fill={m.starred}
-                          color={m.starred ? 'var(--gdg-yellow)' : 'var(--text-subtle)'}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Category Tag */}
-                    {m.category && (
+                      {/* Title & Agenda */}
                       <div>
-                        <Badge variant="purple" size="sm">
-                          {m.category}
-                        </Badge>
-                      </div>
-                    )}
-
-                    {/* Meeting Title & Description */}
-                    <div>
-                      <h3
-                        style={{
-                          fontSize: '1.05rem',
-                          fontWeight: 600,
-                          color: 'var(--text-main)',
-                          letterSpacing: '-0.01em',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        {m.title}
-                      </h3>
-                      <p
-                        style={{
-                          fontSize: '0.8125rem',
-                          color: 'var(--text-muted)',
-                          lineHeight: 1.4,
-                          margin: 0,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {m.agenda}
-                      </p>
-                    </div>
-
-                    {/* Google Meet Link Container */}
-                    <div
-                      style={{
-                        background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '8px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '6px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                        <Icon name="videocam" size={16} color="var(--md-primary)" />
-                        <span
+                        <h3
                           style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--md-primary)',
-                            fontWeight: 500,
-                            fontFamily: 'var(--font-mono)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
+                            fontSize: '1.05rem',
+                            fontWeight: 700,
+                            color: 'var(--text-main)',
+                            letterSpacing: '-0.01em',
+                            margin: '0 0 6px 0',
                           }}
                         >
-                          {m.meetLink}
-                        </span>
+                          {m.title}
+                        </h3>
+                        {m.agenda && (
+                          <p
+                            style={{
+                              fontSize: '0.8125rem',
+                              color: 'var(--text-muted)',
+                              lineHeight: 1.45,
+                              margin: 0,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {m.agenda}
+                          </p>
+                        )}
                       </div>
 
-                      <button
-                        onClick={() => handleCopy(m.id, m.meetLink)}
-                        title="Copy Meet Link"
+                      {/* Online Meet Link / Offline Location Box */}
+                      {m.mode === 'ONLINE' && m.meetLink ? (
+                        <div
+                          style={{
+                            background: 'var(--bg-elevated)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '6px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                            <Icon name="videocam" size={16} color="var(--gdg-blue)" />
+                            <span
+                              style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--gdg-blue)',
+                                fontWeight: 500,
+                                fontFamily: 'var(--font-mono)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {m.meetLink}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => handleCopy(m.id, m.meetLink!)}
+                            title="Copy Meet Link"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--gdg-blue)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '2px',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Icon name={copiedId === m.id ? 'check' : 'content_copy'} size={16} />
+                          </button>
+                        </div>
+                      ) : m.location ? (
+                        <div
+                          style={{
+                            background: 'var(--bg-elevated)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '0.8125rem',
+                            color: 'var(--text-main)',
+                          }}
+                        >
+                          <Icon name="location_on" size={16} color="var(--gdg-red)" />
+                          <span style={{ fontWeight: 500 }}>{m.location}</span>
+                        </div>
+                      ) : null}
+
+                      {/* In-Charge Member Badge */}
+                      {m.assignedInCharge && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--gdg-blue)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Icon name="badge" size={14} color="var(--gdg-blue)" />
+                          <span>In-Charge: <strong>{m.assignedInCharge.name}</strong></span>
+                        </div>
+                      )}
+
+                      {/* Bottom Action Row: Details (Attendance & MoM) + Join Button */}
+                      <div
                         style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'var(--md-primary)',
+                          borderTop: '1px solid var(--border-color)',
+                          paddingTop: '12px',
                           display: 'flex',
+                          justifyContent: 'space-between',
                           alignItems: 'center',
-                          padding: '2px',
-                          flexShrink: 0,
+                          gap: '8px',
                         }}
                       >
-                        <Icon name={copiedId === m.id ? 'check' : 'content_copy'} size={16} />
-                      </button>
-                    </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>
+                          📅 {m.date}
+                        </span>
 
-                    {/* Bottom Action Buttons */}
-                    <div
-                      style={{
-                        borderTop: '1px solid var(--border-color)',
-                        paddingTop: '10px',
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        gap: '8px',
-                      }}
-                    >
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        leftIcon={<Icon name="info" size={16} />}
-                        onClick={() => setSelectedMeeting(m)}
-                      >
-                        Details
-                      </Button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <Link href={`/meetings/${m.id}`}>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              leftIcon={<Icon name="checklist" size={16} />}
+                            >
+                              Attendance &amp; MoM
+                            </Button>
+                          </Link>
 
-                      <a href={m.meetLink} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          leftIcon={<Icon name="videocam" size={16} />}
-                        >
-                          Join
-                        </Button>
-                      </a>
+                          {m.mode === 'ONLINE' && m.meetLink && (
+                            <a href={m.meetLink} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                leftIcon={<Icon name="videocam" size={16} />}
+                              >
+                                Join
+                              </Button>
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Right Side: Sticky Fixed Calendar Sidebar (Hidden on Mobile) */}
+          {/* Right Side: Sticky Mini Calendar Widget */}
           <div className="meetings-calendar-sidebar">
             <div
               style={{
@@ -577,7 +619,7 @@ export default function MeetingsPage() {
           </div>
         </div>
 
-        {/* Schedule Meeting Modal */}
+        {/* Schedule Meeting Modal (Constrained Viewport, Online/Offline, In-Charge Selection) */}
         <Modal
           isOpen={isScheduleOpen}
           onClose={() => setIsScheduleOpen(false)}
@@ -587,18 +629,72 @@ export default function MeetingsPage() {
           <form onSubmit={handleCreateMeeting} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <Input
               label="Meeting Title"
-              placeholder="e.g. Developers MEET"
+              placeholder="e.g. Core Team Sprint Sync"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
 
-            <Input
-              label="Track / Category Tag"
-              placeholder="e.g. Core Team & Chapter Leads"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
+            {/* Meeting Mode Switcher: Online vs Offline */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+                Meeting Mode
+              </label>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '8px',
+                  background: 'var(--bg-elevated)',
+                  padding: '4px',
+                  borderRadius: 'var(--radius-full)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setMeetingMode('ONLINE')}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    background: meetingMode === 'ONLINE' ? 'var(--md-primary)' : 'transparent',
+                    color: meetingMode === 'ONLINE' ? 'var(--md-on-primary)' : 'var(--text-muted)',
+                    fontWeight: meetingMode === 'ONLINE' ? 700 : 500,
+                    fontSize: '0.8125rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Icon name="videocam" size={16} />
+                  <span>Online (Google Meet)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMeetingMode('OFFLINE')}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    background: meetingMode === 'OFFLINE' ? 'var(--md-primary)' : 'transparent',
+                    color: meetingMode === 'OFFLINE' ? 'var(--md-on-primary)' : 'var(--text-muted)',
+                    fontWeight: meetingMode === 'OFFLINE' ? 700 : 500,
+                    fontSize: '0.8125rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Icon name="location_on" size={16} />
+                  <span>Offline (In-Person)</span>
+                </button>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
@@ -641,13 +737,52 @@ export default function MeetingsPage() {
               />
             </div>
 
-            <Input
-              label="Google Meet Link"
-              placeholder="https://meet.google.com/..."
-              value={meetLink}
-              onChange={(e) => setMeetLink(e.target.value)}
-              required
-            />
+            {meetingMode === 'ONLINE' ? (
+              <Input
+                label="Google Meet Link"
+                placeholder="https://meet.google.com/..."
+                value={meetLink}
+                onChange={(e) => setMeetLink(e.target.value)}
+                required
+              />
+            ) : (
+              <Input
+                label="Venue / Room Location"
+                placeholder="e.g. Campus Auditorium / Room 302"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
+            )}
+
+            {/* Assign Member in Charge for Attendance & MoM */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+                Assign In-Charge Member (Attendance &amp; MoM)
+              </label>
+              <select
+                value={selectedInChargeId}
+                onChange={(e) => setSelectedInChargeId(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0 12px',
+                  color: 'var(--text-main)',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                }}
+              >
+                <option value="">-- Choose Assigned Member for Attendance &amp; MoM --</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} &bull; {m.role} {m.leadTitle ? `(${m.leadTitle})` : ''} - {m.domain || 'General'}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <Input
               label="Host Organizer"
@@ -660,82 +795,12 @@ export default function MeetingsPage() {
               <Button type="button" variant="secondary" onClick={() => setIsScheduleOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary">
-                Create Meeting
+              <Button type="submit" variant="primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Creating...' : 'Create Meeting'}
               </Button>
             </div>
           </form>
         </Modal>
-
-        {/* Meeting Details Modal */}
-        {selectedMeeting && (
-          <Modal
-            isOpen={!!selectedMeeting}
-            onClose={() => setSelectedMeeting(null)}
-            title={selectedMeeting.title}
-            icon="event_note"
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <Badge variant="purple">
-                  {selectedMeeting.category || 'General Sync'}
-                </Badge>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  Agenda &amp; Discussion
-                </h4>
-                <p style={{ fontSize: '0.9375rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
-                  {selectedMeeting.agenda}
-                </p>
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px',
-                  background: 'var(--bg-elevated)',
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-color)',
-                }}
-              >
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Date &amp; Time</span>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)', marginTop: '2px' }}>
-                    📅 {selectedMeeting.date}
-                  </div>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                    ⏰ {selectedMeeting.time}
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Host &amp; Attendance</span>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)', marginTop: '2px' }}>
-                    👤 {selectedMeeting.host}
-                  </div>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                    👥 {selectedMeeting.attendeesCount} Members Expected
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-                <Button variant="secondary" onClick={() => setSelectedMeeting(null)}>
-                  Close
-                </Button>
-                <a href={selectedMeeting.meetLink} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                  <Button variant="primary" leftIcon={<Icon name="videocam" size={18} />}>
-                    Join Google Meet
-                  </Button>
-                </a>
-              </div>
-            </div>
-          </Modal>
-        )}
       </div>
     </DashboardShell>
   );

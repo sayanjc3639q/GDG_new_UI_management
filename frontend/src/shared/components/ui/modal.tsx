@@ -56,6 +56,9 @@ export const Modal: React.FC<ModalProps> = ({
         style={{
           width: '100%',
           maxWidth,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
           background: 'var(--bg-card)',
           borderRadius: 'var(--radius-2xl)',
           border: '1px solid var(--border-color)',
@@ -69,9 +72,10 @@ export const Modal: React.FC<ModalProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '20px 24px',
+            padding: '18px 24px',
             borderBottom: '1px solid var(--border-color)',
             background: 'var(--bg-card)',
+            flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -91,7 +95,7 @@ export const Modal: React.FC<ModalProps> = ({
                 <Icon name={icon} size={20} />
               </span>
             )}
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em', margin: 0 }}>
               {title}
             </h3>
           </div>
@@ -113,7 +117,7 @@ export const Modal: React.FC<ModalProps> = ({
             <Icon name="close" size={20} />
           </button>
         </div>
-        <div style={{ padding: '24px' }}>{children}</div>
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>{children}</div>
       </div>
     </div>
   );
